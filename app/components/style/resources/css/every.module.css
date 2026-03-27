@@ -1,0 +1,696 @@
+@charset "utf-8";
+
+/* ===== 레이아웃 기본 ===== */
+.auth_background {
+  /* 기존 배경색 + 배경이미지 함께 사용 */
+  background-color: #FAFAFE;
+  background-image: url('../imgs/system_background.png');
+  background-repeat: no-repeat;
+  background-position: center;      /* 화면 중앙 정렬 */
+  background-size: cover;           /* 화면 전체 채우기 */
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;          /* ✅ 작은 화면에서도 스크롤 가능 */
+  width: 100%;
+  padding: 24px;              /* ✅ 양 옆 여백 */
+  box-sizing: border-box;
+  overflow: hidden;
+
+  /* 🔹 살짝 페이드 인 */
+  animation: bgFadeIn 0.8s ease-out;
+}
+
+/* 로그인 카드 */
+.login_box {
+  width: min(600px, 100%);    /* ✅ 반응형 폭 */
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(17, 24, 39, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 32px 32px;    /* ✅ 내부 여백 */
+  box-sizing: border-box;
+  gap: 4px;
+
+  /* 🔹 아래에서 살짝 올라오는 애니메이션 */
+  animation: cardSlideUp 0.7s ease-out 0.1s both;
+  will-change: transform, opacity;
+
+  /* 🔹 마우스 올렸을 때 살짝 뜨는 느낌 */
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.login_box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+}
+
+/* ===== 헤더(로고/타이틀) ===== */
+.startResponseContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 4px;
+  margin-bottom: 14px;
+}
+
+.login_text {
+  margin-top: 6px;
+  margin-bottom: 6px;
+  color: #000;
+  text-align: center;
+  font-family: "Heebo";
+  font-size: 28px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+}
+
+.login_detail_text {
+  color: #8F8F92;
+  font-family: "Heebo";
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: -0.9px;  
+  }
+
+/* ===== 레이블 ===== */
+.login_id_text,
+.login_pw_text {
+  color: #312E37;
+  font-family: "Heebo";
+  font-style: normal;
+  font-size: 16px;
+  font-weight: 600;
+
+  line-height: normal;
+  align-self: stretch;         /* ✅ 박스의 왼쪽으로 붙게 */
+  margin-top: 22px;
+  margin-left: 16px;
+
+}
+
+/*===내 정보 기억하기 ===*/
+/* 비밀번호 아래 유틸 영역 (체크박스 + 찾기 링크) */
+.login_util_row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  align-self: stretch;
+  width: 100%;
+  margin-top: 3px;
+}
+
+/* "내 정보 기억하기" */
+.remember_me {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: "Heebo", "Noto Sans KR", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #312E37;
+  cursor: pointer;
+  padding-left:6px;
+}
+
+/* 브라우저 기본 체크박스 사용 + 색만 톤 맞추기 */
+.remember_checkbox {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #034FA4; /* 지원되는 브라우저에서 파란 체크박스 */
+  cursor: pointer;
+}
+
+.remember_label {
+  line-height: 1;
+}
+
+/* ===== 액션 영역 ===== */
+.login_button_div,
+.signup_button_div {
+  align-self: stretch;
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+/* 아이디/비밀번호 찾기 문구 래퍼: 오른쪽 끝 정렬되도록 폭을 늘린다 */
+.search_id_pw_text {
+  display: flex;
+  justify-content: flex-end;  /* 내부 콘텐츠를 오른쪽으로 */
+  align-self: stretch;        /* 부모 flex(col)에서 가로 100% 차지 */
+  width: 100%;               /* 안전빵 */
+  margin-top: 8px;
+}
+
+/* 클릭 가능한 파란 텍스트 버튼 */
+.search_id_pw_link {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: #034FA4;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: Heebo;
+}
+
+.search_id_pw_link:hover,
+.search_id_pw_link:focus {
+  text-decoration: underline;
+  outline: none;
+}
+
+.signin_button {
+  width: 100%;                 /* ✅ 가득 채우기 */
+  height: 53px;
+  border-radius: 8px;
+  border: 1.5px solid #034FA4;
+  background: #034FA4;
+  color: #FFFFFF;
+  font-family: "Heebo";
+  font-size: 16px;             /* 🔹 누락된 값 채움 */
+  font-weight: 600;
+  line-height: 53px;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.06s ease;
+}
+.signin_button:hover {
+  background: #003E86;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.signin_button:active {
+  transform: translateY(1px);
+}
+
+/* ---- OR Divider ---- */
+.or_divider_wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+  margin-top: 14px;
+}
+.divider_line {
+  flex: 1;
+  height: 1.5px;
+  background: #E6EAF2;
+}
+.or_text {
+  color: #034FA4;
+  font-family: "Heebo";
+  font-size: 16px;            /* ✅ 살짝 작게 */
+  font-weight: 700;
+  letter-spacing: 0.6px;
+}
+
+
+
+/* ---- Sign Up Outlined Button ---- */
+.signup_button {
+  width: 100%;                 /* ✅ 가득 채우기 */
+  height: 53px;
+  border-radius: 8px;
+  border: 1.5px solid #034FA4;
+  background: #FFFFFF;
+  color: #034FA4;
+  font-family: Heebo, "Noto Sans KR", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 53px;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.02s ease;
+}
+
+.signup_button:hover {
+  background: #F3F8FF;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.signup_button:active {
+  transform: translateY(0.5px);
+}
+
+.company_logo_container{
+  padding:20px;
+  padding-bottom: 0px;
+}
+
+
+/* ===== 반응형 ===== */
+/* <= 1024px: 약간 컴팩트하게 */
+@media (max-width: 1024px) {
+  .auth_background {
+    padding: 20px;
+  }
+
+  .login_box {
+    width: min(520px, 100%);
+    padding: 24px 24px 28px;
+  }
+
+  .startResponseContainer {
+    margin-top: 0;
+    margin-bottom: 10px;
+  }
+
+  .login_text {
+    font-size: 28px;
+  }
+
+  .login_detail_text {
+    font-size: 16px;
+  }
+
+  .company_logo_container {
+    padding: 18px 16px 0;
+  }
+}
+
+/* <= 768px: 모바일/태블릿 최적화 */
+@media (max-width: 768px) {
+  .auth_background {
+    padding: 18px;
+  }
+
+  .login_box {
+    width: 100%;
+    gap: 2px;
+    padding: 22px 20px 24px;
+  }
+
+  .login_text {
+    font-size: 24px;
+  }
+
+  .login_detail_text {
+    font-size: 15px;
+    text-align: center;
+  }
+
+  .login_id_text,
+  .login_pw_text {
+    font-size: 15px;
+    margin-top: 18px;
+    margin-left: 10px;
+  }
+
+  .startResponseContainer {
+    margin-bottom: 8px;
+  }
+
+  .company_logo_container {
+    padding: 16px 8px 0;
+  }
+}
+
+/* <= 480px: 작은 폰 */
+@media (max-width: 480px) {
+  .auth_background {
+    padding: 14px;
+  }
+
+  .login_box {
+    padding: 18px 14px 20px;
+    border-radius: 10px;
+  }
+
+  .login_text {
+    font-size: 22px;
+  }
+
+  .login_detail_text {
+    font-size: 14px;
+  }
+
+  .signin_button,
+  .signup_button {
+    height: 48px;
+    line-height: 48px;
+    font-size: 15px;
+  }
+
+  .or_text {
+    font-size: 11px;
+  }
+
+  .company_logo_container {
+    padding: 12px 4px 0;
+  }
+
+  /* ✅ 내 정보 기억하기 + 링크 세로 배치 */
+  .login_util_row {
+    flex-direction: column;     /* 위/아래로 쌓기 */
+    align-items: stretch;       /* 가로 방향 꽉 채우기 */
+    gap: 4px;
+  }
+
+  /* 내 정보 기억하기는 왼쪽 */
+  .remember_me {
+    align-self: flex-start;
+  }
+
+  /* 링크는 오른쪽 */
+  .login_util_row .search_id_pw_link {
+    align-self: flex-end;       /* 오른쪽 끝으로 */
+    text-align: right;
+    font-size: 12px;            /* 선택: 글자 살짝 축소 */
+  }
+}
+
+/* ===== 회원정보 수정 박스 ===== */
+.profile_box {
+  width: min(640px, 100%);
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(17, 24, 39, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 32px 32px;
+  box-sizing: border-box;
+  gap: 4px;
+}
+
+.profile_title {
+  color: #000;
+  text-align: center;
+  font-family: "Heebo";
+  font-size: 32px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+}
+
+.profile_sub_title {
+  margin-top: 4px;
+  color: #8F8F92;
+  font-family: "Heebo";
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: -0.9px;
+}
+
+
+.profile_label {
+  color: #312E37;
+  font-family: "Heebo";
+  font-size: 16px;
+  font-weight: 600;
+  align-self: stretch;
+  margin-top: 18px;
+  margin-left: 16px;  
+}
+
+/* 소속 - 행정구역/지자체명 */
+.profile_aff_wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.profile_select {
+  width: 100%;
+  height: 48px;
+  border-radius: 10px;
+  border: 1px solid #B3E1FF;
+  background-color: #FAFDFF;
+  padding: 0 12px;
+  font-size: 15px;
+  color: #3b3b3b;
+  appearance: none;
+}
+
+.profile_select {
+  /* 네이티브 화살표 숨기기 */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  /* 우측 여백 (화살표 자리) */
+  padding-right: 42px;
+
+  /* 심플 화살표 (DocumentTemplateManagement와 동일 톤) */
+  background-image: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 7l5 6 5-6' stroke='%23585858' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 20px;
+
+  /* iOS 등에서 텍스트 좌우 정렬 깨짐 방지 */
+  text-indent: 0.01px;
+  text-overflow: '';
+}
+
+/* 비활성화 시 화살표 색만 연하게 */
+.profile_select:disabled {
+  background-image: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 7l5 6 5-6' stroke='%23C9C9C9' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* 버튼 */
+.profile_button_div {
+  align-self: stretch;
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+}
+
+.profile_submit_button {
+  width: 100%;
+  height: 53px;
+  border-radius: 8px;
+  border: 1.5px solid #034FA4;
+  background: #034FA4;
+  color: #FFFFFF;
+  font-family: "Heebo", "Noto Sans KR", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 53px;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.02s ease;
+}
+.profile_submit_button:hover { background: #003E86; }
+.profile_submit_button:active { transform: translateY(0.5px); }
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .profile_title { font-size: 24px; }
+  .profile_aff_wrapper { grid-template-columns: 1fr; }
+}
+
+/* ===== 회원가입 input + button row ===== */
+.inline_field_row {
+  display: flex;
+  align-items: center;        /* 버튼과 인풋 수직 정렬 */
+  gap: 10px;                  /* 인풋-버튼 간격 */
+  width: 100%;
+}
+
+.inline_field_input {
+  flex: 1 1 auto;             /* 인풋이 남는 너비를 모두 차지 */
+  min-width: 0;               /* 컨테이너 줄바꿈 시 넘침 방지 */
+}
+
+/* 중복 확인 버튼 스타일 (스크린샷과 동일 톤) */
+.inline_field_button {
+  flex: 0 0 120px;            /* 고정 너비 */
+  height: 50px;
+  border: none;
+  border-radius: 8px;
+  background: #0B56A5;        /* K-water 블루 톤 */
+  color: #fff;
+  font-family: "Noto Sans KR";
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 50px;          /* 텍스트 수직 가운데 */
+  text-align: center;
+  cursor: pointer;
+  padding: 0 16px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
+.inline_field_button:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+
+.inline_field_button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.inline_field_button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* 모바일에서 세로 스택 */
+@media (max-width: 560px) {
+  .inline_field_row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .inline_field_button {
+    width: 100%;
+    flex: 0 0 50px;
+  }
+}
+
+/* ===== ID/PW찾기 ===== */
+/* ===== ID/PW 찾기 전용 ===== */
+.recover_background {
+  /* 기존 배경색 + 배경이미지 함께 사용 */
+  background-color: #FAFAFE;
+  background-image: url('../imgs/system_background.png');
+  background-repeat: no-repeat;
+  background-position: center;      /* 화면 중앙 정렬 */
+  background-size: cover;           /* 화면 전체 채우기 */
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;          /* ✅ 작은 화면에서도 스크롤 가능 */
+  width: 100%;
+  padding: 24px;              /* ✅ 양 옆 여백 */
+  box-sizing: border-box;
+  overflow: hidden;
+
+  /* 🔹 살짝 페이드 인 */
+  animation: bgFadeIn 0.8s ease-out;
+}
+
+.recover_box {
+  width: min(600px, 100%);
+  /* min-height:400px; */
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(17, 24, 39, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 32px 32px;
+  box-sizing: border-box;
+  gap: 4px;
+}
+
+.recover_logo_wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.recover_title {
+  margin-top: 20px;
+  color: #0F172A;
+  text-align: center;
+  font-family: "Heebo";
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.4px;
+  color: #1E5EAA; /* 블루 포인트 */
+}
+
+.recover_subtext {
+  color: #8F8F92;
+  text-align: center;
+  font-family: "Heebo";
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.2px;
+  margin-top: 4px;
+  margin-bottom: 2px;
+}
+
+.recover_label {
+  color: #312E37;
+  font-family: "Heebo";
+  font-size: 16px;
+  font-weight: 600;
+  align-self: stretch;
+  margin-top: 18px;
+  margin-left: 16px;
+}
+
+.recover_button_div {
+  align-self: stretch;
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+}
+
+.recover_primary_button {
+  width: 100%;
+  height: 53px;
+  border-radius: 8px;
+  border: 1.5px solid #034FA4;
+  background: #034FA4;
+  color: #FFFFFF;
+  font-family:"Heebo";
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 53px;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.02s ease;
+}
+.recover_primary_button:hover {
+  background: #003E86;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.recover_primary_button:active {
+  transform: translateY(0.5px);
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .recover_box { gap: 2px; padding: 24px; }
+  .recover_title { font-size: 24px; }
+  .recover_subtext { font-size: 13px; }
+}
+@media (max-width: 480px) {
+  .recover_background { padding: 16px; }
+  .recover_box { padding: 20px 18px 22px; border-radius: 10px; }
+  .recover_title { font-size: 22px; }
+  .recover_primary_button { height: 48px; line-height: 48px; font-size: 15px; }
+}
+
+
+
+/* ===== 애니메이션 정의 ===== */
+@keyframes bgFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(1);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes cardSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
