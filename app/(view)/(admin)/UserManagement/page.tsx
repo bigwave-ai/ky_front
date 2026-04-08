@@ -667,6 +667,10 @@ const handleAddCompressor = async (form: AddCompressorFormType) => {
 
                   <div className={umc.user_infoRows}>
                     <div className={umc.user_infoRow}>
+                      <div className={umc.user_labelCell}>장비 명</div>
+                      <div className={umc.user_valueCell}>{cp.deviceName}</div>
+                    </div>
+                    <div className={umc.user_infoRow}>
                       <div className={umc.user_labelCell}>시리얼 번호</div>
                       <div className={umc.user_valueCell}>{cp.serialNumber}</div>
                     </div>
@@ -681,10 +685,6 @@ const handleAddCompressor = async (form: AddCompressorFormType) => {
                     <div className={umc.user_infoRow}>
                       <div className={umc.user_labelCell}>장비 마력</div>
                       <div className={umc.user_valueCell}>{cp.equipmentPower}</div>
-                    </div>
-                    <div className={umc.user_infoRow}>
-                      <div className={umc.user_labelCell}>장비 명</div>
-                      <div className={umc.user_valueCell}>{cp.deviceName}</div>
                     </div>
                   </div>
                 </section>

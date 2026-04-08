@@ -26,6 +26,8 @@ const SERIAL_REGEX = /^\d{10}$/
 const INT_REGEX = /^\d+$/
 const DEVICE_NAME_MAX_LENGTH = 100
 
+const normalizeName = (v: string) => v.trim().replace(/\s+/g, ' ').toLowerCase()
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse<ResBody>) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST'])
@@ -58,17 +60,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       return res.status(400).json({ success: false, message: '장비 번호는 숫자만 입력 가능합니다.' })
     }
 
-    const [customer, deviceType, dataType, duplicateSerial] = await Promise.all([
+    const [customer, deviceType, dataType, duplicateSerial, sameCustomerDevices] = await Promise.all([
       prisma.tB_CUSTOMER.findUnique({ where: { CUSTOMER_ID: customerId }, select: { CUSTOMER_ID: true } }),
       prisma.tB_DEVICE_TYPE.findUnique({ where: { DEVICE_TYPE: deviceTypeCode }, select: { DEVICE_TYPE: true } }),
       prisma.tB_DATA_TYPE.findUnique({ where: { DATA_TYPE: dataTypeCode }, select: { DATA_TYPE: true } }),
       prisma.tB_DEVICE.findFirst({ where: { SERIAL_NO: serialNumber }, select: { DEVICE_ID: true } }),
+      prisma.tB_DEVICE.findMany({
+        where: { CUSTOMER_ID: customerId },
+        select: { DEVICE_ID: true, DEVICE_NAME: true },
+      }),
     ])
 
     if (!customer) return res.status(404).json({ success: false, message: '고객사를 찾을 수 없습니다.' })
     if (!deviceType) return res.status(400).json({ success: false, message: '유효하지 않은 장비 타입입니다.' })
     if (!dataType) return res.status(400).json({ success: false, message: '유효하지 않은 데이터 타입입니다.' })
     if (duplicateSerial) return res.status(409).json({ success: false, message: '이미 등록된 시리얼 번호입니다.' })
+
+    const targetName = normalizeName(deviceName)
+    const duplicateName = sameCustomerDevices.some(
+      (d) => normalizeName(String(d.DEVICE_NAME ?? '')) === targetName,
+    )
+    if (duplicateName) {
+      return res.status(409).json({
+        success: false,
+        message: '동일 고객사 내에 이미 사용 중인 장비 명입니다.',
+      })
+    }
 
     const deviceId = crypto.randomUUID()
     await prisma.tB_DEVICE.create({
