@@ -16,8 +16,8 @@ import type { AtomSideMenuItemType } from '@/app/models/atoms/atom-side-menu'
  * 01. 구분     : Layout Component
  * 02. 타입     : Client Component
  * 03. 업무구분 : 멤버권한 - Header
- * 04. 설명     : 메뉴 config 기반 경로 타이틀/인사 영역 렌더링
- * 05. 작성일자 : 2026.03.25
+ * 04. 설명     : 로그인 role 기반 경로 타이틀/인사 영역 렌더링
+ * 05. 작성일자 : 2026.03.27
  * 06. 작성자   : 이우창
  */
 
@@ -58,13 +58,34 @@ export default function LayoutMemberHeader({
 
   const [isMounted, setIsMounted] = useState(false)
   const lastUserNameRef = useRef<string>('')
+  const lastRoleRef = useRef<string>('')
+
+  /******************** 함수 영역 ********************/
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  useEffect(() => {
+    const rawRole = (session?.role ?? '').trim().toLowerCase()
+    if (rawRole) lastRoleRef.current = rawRole
+  }, [session?.role])
+
+  const resolvedRole = useMemo(() => {
+    if (!isMounted) return ''
+    const rawRole = (session?.role ?? '').trim().toLowerCase()
+    return rawRole || lastRoleRef.current
+  }, [isMounted, session?.role])
+
+  const isAdminRole =
+    resolvedRole === 'admin' || resolvedRole.includes('admin')
 
   const allMenuItems = useMemo(
     () =>
-      [...SideMenuConfigAdmin, ...SideMenuConfigMember].flatMap(
-        (section) => section.items,
-      ),
-    [],
+      (isAdminRole
+        ? [...SideMenuConfigAdmin, ...SideMenuConfigMember]
+        : SideMenuConfigMember
+      ).flatMap((section) => section.items),
+    [isAdminRole],
   )
 
   const headerTitle = useMemo(
@@ -76,11 +97,6 @@ export default function LayoutMemberHeader({
     () => (headerTitle ? [headerTitle] : []),
     [headerTitle],
   )
-
-  /******************** 함수 영역 ********************/
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
 
   useEffect(() => {
     const rawName =

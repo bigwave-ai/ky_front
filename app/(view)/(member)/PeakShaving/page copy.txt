@@ -1,0 +1,316 @@
+'use client'
+
+import { useState } from 'react'
+import mmc from './PeakShaving.module.css'
+import imag from '@/app/components/style/resources/css/image.module.css'
+import CommonDonutEquipment, {
+  type CommonDonutEquipmentItem,
+} from '@/app/components/libs/charts/common/common-donut-equipment'
+import LoadingModal from '@/app/components/libs/modals/modal-loading'
+import CommonPeakPredictBars from '@/app/components/libs/charts/common/common-peak-predict-bars'
+
+/*
+ * 01. 구분     : Page 컴포넌트
+ * 02. 타입     : Client Component
+ * 03. 업무구분 : 멤버, 관리자 권한 - MILP 피크 분배 대시보드 페이지
+ * 04. 설명     : MILP 피크 분배 시뮬레이션 입력 및 상단/추천 결과 UI 제공
+ * 05. 작성일자 : 2026.03.27
+ * 06. 작성자   : 이우창
+ */
+
+type PeakRecommendationType = {
+  equipmentName: string
+  overflow15Kw: number
+  distribute15Kw: number
+  overflow30Kw: number
+  distribute30Kw: number
+  base15Kw: number
+  base30Kw: number
+}
+
+export default function PeakShavingPage() {
+  /******************** 변수 영역 ********************/
+  const [idleThreshold, setIdleThreshold] = useState(0.05)
+  const [queryHour, setQueryHour] = useState(24)
+  const [showEquipmentResult, setShowEquipmentResult] = useState(false)
+
+  const equipmentLegend: CommonDonutEquipmentItem[] = [
+    { label: '분석 장비 수', value: 27, color: '#0d274b', unit: '대' },
+    { label: '미가동 장비 수', value: 6, color: '#29a9dd', unit: '대' },
+    { label: '제외 장비 수', value: 15, color: '#e9a24f', unit: '대' },
+  ]
+
+  const peakCut15Kw = 265.65
+  const peakCut15Rate = 30.0
+  const peakCut30Kw = 236.3
+  const peakCut30Rate = 30.0
+
+  const recommendations: PeakRecommendationType[] = [
+    {
+      equipmentName: 'Compressor1',
+      overflow15Kw: 44.71,
+      distribute15Kw: 21.25,
+      overflow30Kw: 28.29,
+      distribute30Kw: 28.29,
+      base15Kw: 81.74,
+      base30Kw: 73.74,
+    },
+    {
+      equipmentName: 'Compressor2',
+      overflow15Kw: 44.71,
+      distribute15Kw: 21.25,
+      overflow30Kw: 28.29,
+      distribute30Kw: 28.29,
+      base15Kw: 81.74,
+      base30Kw: 73.74,
+    },
+  ]
+
+  const [isRunning, setIsRunning] = useState(false)
+  /******************** 함수 영역 ********************/
+  const normalizeIdleThreshold = (value: number) => {
+    const clamped = Math.min(1, Math.max(0, value))
+    return Math.round(clamped * 100) / 100
+  }
+
+  const handleRunMilp = async () => {
+    if (isRunning) return
+
+    /*
+    * 추후 Python API 연동 위치
+    * - 실행 중에는 로딩 모달 표시
+    * - 완료 시 결과 카드 표시
+    */
+    setIsRunning(true)
+    setShowEquipmentResult(false)
+
+    try {
+      console.log('MILP run request', { idleThreshold, queryHour })
+      await runPeakMilpMock()
+      setShowEquipmentResult(true)
+    } catch (error) {
+      console.error(error)
+      setShowEquipmentResult(false)
+    } finally {
+      setIsRunning(false)
+    }
+  }
+
+  const formatKw = (value: number) => `${value.toFixed(2)} kW`
+  const formatRate = (value: number) => `(${value.toFixed(2)}%)`
+
+  // const toBarHeight = (value: number) => {
+  //   const maxHeight = 126
+  //   const normalized = (value / 90) * maxHeight
+  //   return Math.max(72, Math.min(maxHeight, normalized))
+  // }
+
+  const delay = (ms: number) =>
+    new Promise<void>((resolve) => {
+      setTimeout(resolve, ms)
+    })
+
+  /*
+  * 추후 Python API 연동 위치
+  * - 현재는 로딩 연출을 위한 지연만 적용
+  */
+  const runPeakMilpMock = async () => {
+    await delay(1600)
+  }
+
+  /******************** 수행 영역 ********************/
+  return (
+    <div className={mmc.peak_root}>
+      <header className={`${mmc.peak_pageHead} ${mmc.peak_stageFadeUp}`}>
+        <h1>MILP 피크 분배 시뮬레이션</h1>
+        <p>MILP 피크에 대한 분배 시뮬레이션 결과를 확인하실 수 있습니다.</p>
+      </header>
+
+      <section className={`${mmc.peak_selectCard} ${mmc.peak_stageFadeUp}`}>
+        <div className={mmc.peak_selectTitleWrap}>
+          <h2>장비 선택/입력</h2>
+          <p>MILP 피크 분배 시뮬레이션을 위해 미가동 기준 및 조회시간을 입력해주세요.</p>
+        </div>
+
+        <div className={mmc.peak_selectControls}>
+          <div className={`${mmc.peak_field} ${mmc.peak_field_idle}`}>
+            <div className={mmc.peak_fieldTop}>
+              <span className={mmc.peak_fieldLabel}>미가동 기준</span>
+              <span className={mmc.peak_fieldHint}>OP_STATUS 평균 이하</span>
+            </div>
+            <input
+              className={`${mmc.peak_numberInput} ${mmc.peak_numberInputSpin}`}
+              type="number"
+              value={idleThreshold}
+              min={0}
+              max={1}
+              step={0.01}
+              onChange={(e) => {
+                const raw = e.target.value
+                if (raw === '') {
+                  setIdleThreshold(0)
+                  return
+                }
+
+                const next = Number(raw)
+                if (Number.isNaN(next)) return
+                setIdleThreshold(normalizeIdleThreshold(next))
+              }}
+              onBlur={() => {
+                setIdleThreshold((prev) => normalizeIdleThreshold(prev))
+              }}
+            />
+          </div>
+
+          <div className={`${mmc.peak_field} ${mmc.peak_field_time}`}>
+            <div className={mmc.peak_fieldTop}>
+              <span className={mmc.peak_fieldLabel}>조회 시간</span>
+              <span className={mmc.peak_fieldHint}>적절한 조회 시간 입력</span>
+            </div>
+            <input
+              className={`${mmc.peak_numberInput} ${mmc.peak_numberInputSpin}`}
+              type="number"
+              value={queryHour}
+              min={1}
+              step={1}
+              onChange={(e) => {
+                const next = Number(e.target.value)
+                if (Number.isNaN(next)) {
+                  setQueryHour(1)
+                  return
+                }
+                setQueryHour(Math.max(1, next))
+              }}
+            />
+          </div>
+
+          <button
+            type="button"
+            className={mmc.peak_runBtn}
+            onClick={handleRunMilp}
+            disabled={isRunning}
+          >
+            {isRunning ? 'MILP 실행 중...' : 'MILP 실행'}
+          </button>
+
+        </div>
+      </section>
+
+      {showEquipmentResult && (
+        <section className={mmc.peak_resultWrap}>
+          <div className={mmc.peak_topResultGrid}>
+            <article className={`${mmc.peak_equipmentCard} ${mmc.peak_stageFadeUp}`}>
+              <div className={mmc.peak_cardHead}>
+                <h3>장비 수</h3>
+                <p>MILP 피크에 대한 장비 분석 결과 입니다.</p>
+              </div>
+
+              <div className={mmc.peak_equipmentBody}>
+                <CommonDonutEquipment legend={equipmentLegend} totalLabel="전체 장비 수" />
+              </div>
+            </article>
+
+            <article
+              className={`${mmc.peak_peakReduceCard} ${mmc.peak_peakReduceCardBlue} ${mmc.peak_stageFadeUp}`}
+            >
+              <div className={mmc.peak_peakReduceIconWrap} aria-hidden="true">
+                <div className={`${imag.elctric_circle_icon} ${mmc.peak_electricIcon}`} />
+              </div>
+
+              <h4 className={mmc.peak_peakReduceTitle}>15분 피크 절감</h4>
+
+              <div className={mmc.peak_peakReduceValueWrap}>
+                <strong className={mmc.peak_peakReduceValue}>{formatKw(peakCut15Kw)}</strong>
+                <span className={mmc.peak_peakReduceRate}>{formatRate(peakCut15Rate)}</span>
+              </div>
+            </article>
+
+            <article
+              className={`${mmc.peak_peakReduceCard} ${mmc.peak_peakReduceCardWhite} ${mmc.peak_stageFadeUp}`}
+            >
+              <div className={mmc.peak_peakReduceIconWrap} aria-hidden="true">
+                <div className={`${imag.elctric_circle_icon} ${mmc.peak_electricIcon}`} />
+              </div>
+
+              <h4 className={mmc.peak_peakReduceTitle}>30분 피크 절감</h4>
+
+              <div className={mmc.peak_peakReduceValueWrap}>
+                <strong className={mmc.peak_peakReduceValue}>{formatKw(peakCut30Kw)}</strong>
+                <span className={mmc.peak_peakReduceRate}>{formatRate(peakCut30Rate)}</span>
+              </div>
+            </article>
+          </div>
+
+          <article className={`${mmc.peak_recommendCard} ${mmc.peak_stageFadeUp}`}>
+            <div className={mmc.peak_cardHead}>
+              <h3>장비 분배 추천</h3>
+              <p>피크 절감을 위한 장비 분배 추천 결과입니다.</p>
+            </div>
+
+            <div className={mmc.peak_recommendRows}>
+              {recommendations.map((item) => (
+                <div key={item.equipmentName} className={mmc.peak_recommendRow}>
+                  {/* 하나의 세트: 장비정보 + 추천분배 */}
+                  <div className={mmc.peak_recommendInfoWrap}>
+                    <div className={mmc.peak_recommendInfoRow}>
+                      <div className={mmc.peak_recommendBadge}>장비 정보</div>
+                      <strong className={mmc.peak_recommendEquipment}>{item.equipmentName}</strong>
+                    </div>
+
+                    <div className={mmc.peak_recommendInfoRow}>
+                      <div className={mmc.peak_recommendBadgeLarge}>추천 분배</div>
+                      <div className={mmc.peak_recommendTextGroup}>
+                        <p className={mmc.peak_recommendText}>
+                          15분 후 임계치 초과 예상량은 <strong>{item.overflow15Kw.toFixed(2)}kW</strong>
+                          입니다.
+                          <span className={mmc.peak_recommendHighlight}>
+                            {' '}
+                            {item.equipmentName} 장비로 약 {item.distribute15Kw.toFixed(2)}kW를 분배{' '}
+                          </span>
+                          하면 피크 완화가 가능합니다.
+                        </p>
+
+                        <p className={mmc.peak_recommendText}>
+                          30분 후 임계치 초과 예상량은 <strong>{item.overflow30Kw.toFixed(2)}kW</strong>
+                          입니다.
+                          <span className={mmc.peak_recommendHighlight}>
+                            {' '}
+                            {item.equipmentName} 장비로 약 {item.distribute30Kw.toFixed(2)}kW를 분배{' '}
+                          </span>
+                          하면 피크 완화가 가능합니다.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 같은 세트의 우측: 장비 가동 예측 + 차트 */}
+                  <div className={mmc.peak_recommendRightGroup}>
+                    <div className={mmc.peak_recommendPredictBox}>장비 가동 예측</div>
+
+                    <CommonPeakPredictBars
+                      bars={[
+                        { label: '15분 기준값', value: item.base15Kw },
+                        { label: '30분 기준값', value: item.base30Kw },
+                      ]}
+                      unit="KW"
+                      maxValue={90}
+                      gapPx={80}
+                      sidePaddingPx={40}
+                      valueOffsetPx={8}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
+        </section>
+      )}
+
+      <LoadingModal
+        open={isRunning}
+        message="MILP 시뮬레이션을 실행중입니다."
+        subMessage="잠시만 기다려주세요."
+      />
+    </div>
+  )
+}

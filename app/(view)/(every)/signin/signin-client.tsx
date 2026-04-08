@@ -24,6 +24,7 @@ import LoadingModal from "@/app/components/libs/modals/modal-loading";
 
 type SignInResponseData = {
   user_id: string;
+  customer_id?: string;
   name?: string;
   role?: string;
   email?: string;
@@ -153,6 +154,7 @@ const CredentialProvider = () => {
 
       setUserInfo({
         user_id: result.data.user_id,
+        customer_id: result.data.customer_id ?? "", // 추가
         name: result.data.name ?? "",
         role,
         email: result.data.email ?? "",

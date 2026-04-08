@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { useAtom } from 'jotai'
+import { useAtom, useAtomValue } from 'jotai'
 
 import mmc from '../../style/resources/css/member.module.css'
 import imag from '../../style/resources/css/image.module.css'
@@ -12,13 +12,14 @@ import {
 } from '@/app/models/atoms/atom-side-menu'
 import { SideMenuConfigAdmin } from '@/app/models/atoms/atom-menu-config'
 import { SideMenuConfigMember } from '@/app/models/atoms/atom-menu-config-member'
+import { userInfoAtom } from '@/app/models/atoms/atom-user-info'
 
 /*
  * 01. 구분     : Layout Component
  * 02. 타입     : Client Component
  * 03. 업무구분 : 멤버권한 - Layout
- * 04. 설명     : 멤버 좌측 사이드바(LSB)
- * 05. 작성일자 : 2026.03.25
+ * 04. 설명     : 멤버 좌측 사이드바(LSB) - 로그인 role 기반 메뉴 노출
+ * 05. 작성일자 : 2026.03.27
  * 06. 작성자   : 이우창
  */
 
@@ -34,15 +35,34 @@ export default function LayoutMemberLsb({
   /******************** 변수영역 ********************/
   const pathname = usePathname()
   const router = useRouter()
+  const session = useAtomValue(userInfoAtom)
   const [, setSelected] = useAtom(AtomSideMenuItem)
 
-  // 현재 요구사항: 권한 분기 없이 전체 노출
-  const menuSections = useMemo(
-    () => [...SideMenuConfigAdmin, ...SideMenuConfigMember],
-    [],
-  )
+  const lastRoleRef = useRef<string>('')
 
   /******************** 함수영역 ********************/
+  useEffect(() => {
+    const rawRole = (session?.role ?? '').trim().toLowerCase()
+    if (rawRole) lastRoleRef.current = rawRole
+  }, [session?.role])
+
+  const resolvedRole = useMemo(() => {
+    const rawRole = (session?.role ?? '').trim().toLowerCase()
+    return rawRole || lastRoleRef.current
+  }, [session?.role])
+
+  const isAdminRole =
+    resolvedRole === 'admin' || resolvedRole.includes('admin')
+
+  // 로그인 role 기반 메뉴 구성
+  const menuSections = useMemo(
+    () =>
+      isAdminRole
+        ? [...SideMenuConfigAdmin, ...SideMenuConfigMember]
+        : SideMenuConfigMember,
+    [isAdminRole],
+  )
+
   const normalizePath = (value?: string | null) => {
     if (!value) return '/'
     const normalized = value.toLowerCase().replace(/\/+$/, '')

@@ -15,7 +15,7 @@ import { atomWithStorage } from "jotai/utils";
 
 export type UserInfoState = {
   user_id: string;
-  // user_id_uuid?: string; // ✅ (현재는 토큰/응답에서 제거할 예정이라면 나중에 삭제 가능)
+  customer_id?: string; // 추가
   name?: string;
   email?: string;
   role?: string;
@@ -28,8 +28,8 @@ export type UserInfoState = {
 // localStorage 키는 기존 recoilPersist의 "session"과 충돌 없게 분리
 export const userInfoAtom = atomWithStorage<UserInfoState>("session.userInfo", {
   user_id: "",
-  // user_id_uuid: "", // 기존 유지
-  status: "",       // ✅ 추가 (초기값에도 넣어줘야 controlled/TS 안정적)
+  customer_id: "", // 추가
+  status: "",
 });
 
 // 필요 시 파생 atom도 만들 수 있습니다.

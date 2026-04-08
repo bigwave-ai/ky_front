@@ -30,11 +30,11 @@ model TB_CUSTOMER {
   CUSTOMER_NAME        String?
   CUSTOMER_INDUSTRY    String?                @db.VarChar(50)
   CUSTOMER_PRODUCT     String?                @db.VarChar(50)
-  CUSTOMER_AUTH        String
-  CUSTOMER_PHONE       String
-  CUSTOMER_EMAIL       String
-  CUSTOMER_PASSWORD    String
-  CUSTOMER_USER_ID     String
+  CUSTOMER_AUTH        String?
+  CUSTOMER_PHONE       String?
+  CUSTOMER_EMAIL       String?
+  CUSTOMER_PASSWORD    String?
+  CUSTOMER_USER_ID     String?
   TB_DEVICE            TB_DEVICE[]
   TB_PEAK_DISPATCH_RUN TB_PEAK_DISPATCH_RUN[]
 }
@@ -48,7 +48,9 @@ model TB_DEVICE {
   DEVICE_NUM                     String?                          @db.VarChar(50)
   CS_SET_TIME                    DateTime?                        @db.Timestamp(6)
   MG_REFILL_SET_TIME             DateTime?                        @db.Timestamp(6)
-  OP_STATUS                      Boolean?
+  HORSE_POWER                    Float?
+  DATA_TYPE                      String?                          @default("0") @db.VarChar(2)
+  DEVICE_NAME                    String?                          @db.VarChar(100)
   TB_AI_PEMS_LOG                 TB_AI_PEMS_LOG[]
   TB_CUSTOMER                    TB_CUSTOMER?                     @relation(fields: [CUSTOMER_ID], references: [CUSTOMER_ID], onDelete: NoAction, onUpdate: NoAction)
   TB_FLOW_LOG                    TB_FLOW_LOG[]
@@ -202,4 +204,14 @@ model TB_WARN_ERROR_LOG {
   EW_NOTE    String?
   EW_DT      DateTime? @db.Timestamp(6)
   TB_DEVICE  TB_DEVICE @relation(fields: [DEVICE_ID], references: [DEVICE_ID], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model TB_DATA_TYPE {
+  DATA_TYPE String @id @db.VarChar(2)
+  NAME      String @db.VarChar(50)
+}
+
+model TB_DEVICE_TYPE {
+  DEVICE_TYPE String @id @db.VarChar(2)
+  NAME        String @db.VarChar(50)
 }

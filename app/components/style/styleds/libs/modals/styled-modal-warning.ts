@@ -16,13 +16,13 @@ export const Overlay = styled.div`
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.25);
-  z-index: 20000;
+  z-index: 22000;  // 기존 20000
 `;
 
 /** 모달 래퍼 */
 export const ModalWrap = styled.div`
   position: fixed;
-  z-index: 20001;
+  z-index: 22001;  // 기존 20001
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);

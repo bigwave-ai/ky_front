@@ -24,6 +24,7 @@ type SignInRequestBody = {
  */
 type SignInSafeUser = {
   user_id: string;
+  customer_id: string; // 추가  
   name: string;
   email: string;
   contact: string;
@@ -132,6 +133,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const role = normalizeRole(customer.CUSTOMER_AUTH ?? "");
     const safeUser: SignInSafeUser = {
       user_id: customer.CUSTOMER_USER_ID,
+      customer_id: customer.CUSTOMER_ID, // 추가      
       name: customer.CUSTOMER_NAME ?? "",
       email: customer.CUSTOMER_EMAIL ?? "",
       contact: customer.CUSTOMER_PHONE ?? "",

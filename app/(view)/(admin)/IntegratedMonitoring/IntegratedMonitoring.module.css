@@ -1,0 +1,405 @@
+/* ==========================================================================
+   13) Integrated Monitoring Page
+   ========================================================================== */
+.integrated_root {
+  width: 100%;
+  min-height: calc(100vh - 72px);
+  min-width: 0;
+  padding: 16px 24px 20px 20px;
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  align-items: start;
+  grid-auto-rows: max-content;
+  background:
+    linear-gradient(90deg, rgba(240, 236, 255, 0.62) 0%, rgba(232, 242, 255, 0.62) 100%),
+    url("../../../components/style/resources/imgs/system_background.png") center / cover no-repeat;
+}
+
+.integrated_pageHead {
+  width: 100%;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.integrated_pageHead h1 {
+  margin: 0;
+  color: #243ea9;
+  font-size: 50px;
+  font-size: 44px;
+  font-size: 40px;
+  font-size: 36px;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -1.6px;
+  line-height: 1.15;
+}
+
+.integrated_pageHead p {
+  margin: 10px 0 0;
+  color: #2b2b2b;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  line-height: 1.35;
+}
+
+/* 상단 지표 카드 */
+.integrated_statsGrid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.integrated_statCard {
+  min-height: 160px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 14px rgba(20, 45, 73, 0.08);
+  padding: 14px 16px 18px;
+  display: grid;
+  align-content: space-between;
+  gap: 12px;
+}
+
+.integrated_statTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.integrated_statTop h3 {
+  margin: 0;
+  color: #2b2b2b;
+  font-size: 34px;
+  font-size: 30px;
+  font-size: 28px;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.25;
+}
+
+.integrated_titleGreen {
+  color: #009845 !important;
+}
+
+.integrated_titleRed {
+  color: #f25b5b !important;
+}
+
+.integrated_iconWrap {
+  width: 68px;
+  height: 68px;
+  border-radius: 999px;
+  background: #eef2f8;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.integrated_statValueBlue {
+  color: #234bc0;
+  font-size: 64px;
+  font-size: 56px;
+  font-size: 52px;
+  font-size: 48px;
+  font-size: 44px;
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: -2px;
+  text-align: right;
+  line-height: 1;
+}
+
+.integrated_statMetricRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.integrated_statValueGreen,
+.integrated_statValueRed {
+  font-size: 46px;
+  font-size: 42px;
+  font-size: 38px;
+  font-size: 34px;
+  font-size: 30px;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -1.4px;
+  line-height: 1;
+}
+
+.integrated_statRateGreen,
+.integrated_statRateRed {
+  font-size: 44px;
+  font-size: 40px;
+  font-size: 36px;
+  font-size: 32px;
+  font-size: 28px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.integrated_statValueGreen,
+.integrated_statRateGreen {
+  color: #009845;
+}
+
+.integrated_statValueRed,
+.integrated_statRateRed {
+  color: #f25b5b;
+}
+
+.integrated_progressTrack {
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+  background: #eceff4;
+  overflow: hidden;
+}
+
+.integrated_progressFillGreen,
+.integrated_progressFillRed {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.integrated_progressFillGreen {
+  background: #0ca049;
+}
+
+.integrated_progressFillRed {
+  background: #f35b5b;
+}
+
+/* 알람 로그 카드 */
+.integrated_logCard {
+  width: 100%;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 14px rgba(20, 45, 73, 0.08);
+  padding: 16px 16px 12px;
+  display: grid;
+  gap: 12px;
+}
+
+.integrated_logHead {
+  padding-bottom: 12px;
+  border-bottom: 1px solid #c7d1dd;
+}
+
+.integrated_logTitleWrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.integrated_logDot {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(39, 165, 223, 0.22);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.integrated_logDot::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #27a5df;
+}
+
+.integrated_logTitleWrap h3 {
+  margin: 0;
+  color: #2b2b2b;
+  font-size: 34px;
+  font-size: 30px;
+  font-size: 26px;
+  font-size: 24px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  white-space: nowrap;
+}
+
+.integrated_logTitleWrap p {
+  margin: 0;
+  color: #5c6f87;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.integrated_tableWrap {
+  overflow: auto;
+  border-radius: 18px;
+  border: 1px solid #d6deea;
+  background: #fff;
+}
+
+.integrated_table {
+  width: 100%;
+  min-width: 1220px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.integrated_table th {
+  background: #f4f6fa;
+  color: #5c6f87;
+  font-size: 16px;
+  font-size: 15px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  padding: 12px 10px;
+  text-align: center;
+  border-bottom: 1px solid #dbe4ef;
+}
+
+.integrated_table td {
+  color: #2b2b2b;
+  font-size: 16px;
+  font-size: 15px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  padding: 11px 10px;
+  text-align: center;
+  border-bottom: 1px solid #edf2f6;
+  background: rgba(255, 255, 255, 0.45);
+  line-height: 1.4;
+}
+
+.integrated_table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.integrated_statusNormal,
+.integrated_statusWarning {
+  min-width: 82px;
+  height: 30px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-size: 15px;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  padding: 0 10px;
+}
+
+.integrated_statusNormal {
+  background: #eaf8ef;
+  color: #00a04f;
+}
+
+.integrated_statusWarning {
+  background: #fff2f2;
+  color: #f35b5b;
+}
+
+/* 페이지네이션 */
+.integrated_pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0 0;
+}
+
+.integrated_pageArrow,
+.integrated_pageNum {
+  border: 0;
+  background: transparent;
+  color: #7e8fa2;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.integrated_pageNumActive {
+  background: #0b77b8;
+  color: #fff;
+}
+
+/* 반응형 */
+@media (max-width: 1600px) {
+  .integrated_statsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1200px) {
+  .integrated_root {
+    padding: 14px 14px 18px;
+  }
+
+  .integrated_pageHead h1 {
+    font-size: 30px;
+    letter-spacing: -1px;
+  }
+
+  .integrated_pageHead p {
+    font-size: 14px;
+  }
+
+  .integrated_logTitleWrap {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .integrated_logTitleWrap p {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 760px) {
+  .integrated_statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .integrated_statCard {
+    min-height: 148px;
+  }
+}
+
+/* 폰트 강제 */
+.integrated_root,
+.integrated_root table,
+.integrated_root th,
+.integrated_root td,
+.integrated_root input,
+.integrated_root select,
+.integrated_root button,
+.integrated_root p,
+.integrated_root span,
+.integrated_root em,
+.integrated_root strong,
+.integrated_root h1,
+.integrated_root h2,
+.integrated_root h3,
+.integrated_root h4 {
+  font-family: Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif !important;
+}

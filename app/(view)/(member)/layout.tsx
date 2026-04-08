@@ -11,8 +11,6 @@ import LayoutMember from '../../components/layouts/member/layout-member'
 
 export default function MemberLayout({ children }: { children: React.ReactNode }) {
   /******************** 변수 영역 ********************/
-  // const [lang] = useAtom<AppLanguage>(AtomLanguage)
-
   /******************** 함수 영역 ********************/
   /******************** 수행 영역 ********************/
   return (

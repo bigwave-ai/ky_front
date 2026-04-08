@@ -69,3 +69,84 @@
   background-size: contain;
   background-image: url("../imgs/logout_icon.png");  
 }
+
+.elctric_circle_icon{
+  width:100px;
+  height:100px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("../imgs/electric_circle_icon.png");  
+}
+
+.user_circle_icon{
+  width: 68px;
+  height: 68px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("../imgs/user_circle_icon.png");    
+}
+
+.compressor_circle_blue_icon{
+  width: 68px;
+  height: 68px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("../imgs/compressor_circle_blue_icon.png");    
+}
+
+.compressor_circle_green_icon{
+  width: 68px;
+  height: 68px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("../imgs/compressor_circle_green_icon.png");    
+}
+
+.compressor_circle_red_icon{
+  width: 68px;
+  height: 68px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("../imgs/compressor_circle_red_icon.png");    
+}
+
+.search_grey_icon{
+  width: 18px;
+  height: 18px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("../imgs/search_grey_icon.png");    
+}
+
+.ai_assistant_icon{
+  width: 30px;
+  height: 30px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("../imgs/ai_assistant_icon.png");
+}
+
+.send_message_icon{
+  width: 26px;
+  height: 26px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("../imgs/send_message.png");    
+}
+
+.compressor_circle_blue_small_icon{
+  width: 24px;
+  height: 24px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("../imgs/compressor_circle_blue_small_icon.png");
+}
