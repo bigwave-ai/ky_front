@@ -664,6 +664,45 @@
   border-bottom: 1px solid #8f98a6;
 }
 
+.simulation_summaryIncreaseText {
+  color: #e14b4b; /* 증가 = 빨강 */
+  font-family: Heebo, Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+  letter-spacing: -0.5px;
+}
+
+.simulation_summaryDecreaseText {
+  color: #138f45; /* 감소 = 초록 */
+  font-family: Heebo, Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+  letter-spacing: -0.5px;
+}
+
+.simulation_summaryNeutralText {
+  color: #5c6f87;
+  font-family: Heebo, Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+  letter-spacing: -0.5px;
+}
+
+.simulation_impactEmpty {
+  margin: 0;
+  color: #7a8798;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  padding: 4px 2px 0;
+}
+
 /* 반응형 */
 @media (max-width: 1600px) {
   .simulation_field_equipment {

@@ -21,14 +21,17 @@ type ChartBarProps = {
 
 /** Y축 + 차트 캔버스 프레임 */
 export const ChartFrame = styled.div`
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-columns: 58px minmax(0, 1fr);
   gap: 8px;
   padding-top: 10px;
   border-top: 0;
 
   @media (max-width: 1024px) {
-    grid-template-columns: 30px minmax(0, 1fr);
+    grid-template-columns: 50px minmax(0, 1fr);
     gap: 8px;
   }
 `
@@ -75,6 +78,7 @@ export const ChartCanvas = styled.div`
   height: 320px;
   padding: 0 8px;
   min-width: 0;
+  overflow: hidden;
 
   @media (max-width: 1024px) {
     height: 286px;
@@ -132,6 +136,7 @@ export const ChartBars = styled.div`
   position: relative;
   z-index: 1;
   width: 100%;
+  min-width: 0;
   height: 100%;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -156,7 +161,7 @@ export const ChartBarItem = styled.div`
 export const ChartTrack = styled.div`
   position: relative;
   width: 100%;
-  max-width: 106px;
+  max-width: 96px;
   height: 100%;
   border: 0;
   border-radius: 0;
@@ -167,39 +172,42 @@ export const ChartTrack = styled.div`
   justify-content: center;
 
   @media (max-width: 1024px) {
-    max-width: 82px;
+    max-width: 78px;
   }
 
   @media (max-width: 760px) {
-    max-width: 70px;
+    max-width: 64px;
   }
 
   @media (max-width: 560px) {
-    max-width: 56px;
+    max-width: 50px;
   }
 `
 
+
 /** 막대 위 값 */
+
 export const ChartValue = styled.span<ChartValueProps>`
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
   bottom: ${({ $height, $offsetPx }) => `calc(${$height}% + ${$offsetPx}px)`};
   margin: 0;
+  max-width: calc(100% + 20px);
+  text-align: center;
   color: #1f1f1f;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: -0.4px;
+  letter-spacing: -0.3px;
   line-height: 1;
   white-space: nowrap;
   pointer-events: none;
   z-index: 2;
 
   @media (max-width: 560px) {
-    font-size: 12px;
+    font-size: 11px;
   }
 `
-
 /** 실제 막대 */
 export const ChartBar = styled.div<ChartBarProps>`
   width: 100%;
