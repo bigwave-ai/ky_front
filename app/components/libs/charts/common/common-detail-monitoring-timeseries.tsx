@@ -47,14 +47,25 @@ const toAreaPath = (points: PlotPointType[], baseY: number) => {
   return `${body} L ${last.x} ${baseY} L ${first.x} ${baseY} Z`
 }
 
+// 숫자 천단위 포맷 공통 함수
+const formatNumberWithComma = (value: number, digits = 0) =>
+  value.toLocaleString('ko-KR', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  })
+
 const formatTick = (value: number) => {
-  if (Math.abs(value) >= 100 || Number.isInteger(value)) return `${Math.round(value)}`
-  return value.toFixed(1)
+  // Y축/이상치 기준 라벨 포맷
+  if (Math.abs(value) >= 100 || Number.isInteger(value)) {
+    return formatNumberWithComma(Math.round(value), 0)
+  }
+  return formatNumberWithComma(value, 1)
 }
 
 const formatPointValue = (value: number) => {
-  if (Math.abs(value) >= 100) return value.toFixed(2)
-  return value.toFixed(3)
+  // 툴팁 값 포맷
+  if (Math.abs(value) >= 100) return formatNumberWithComma(value, 2)
+  return formatNumberWithComma(value, 3)
 }
 
 export default function CommonDetailMonitoringTimeSeriesChart({

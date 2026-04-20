@@ -131,9 +131,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // ── 사용자 정보 매핑 ───────────────────────────────────────────
     const role = normalizeRole(customer.CUSTOMER_AUTH ?? "");
+    const safeUserId = String(customer.CUSTOMER_USER_ID ?? id).trim();
+
     const safeUser: SignInSafeUser = {
-      user_id: customer.CUSTOMER_USER_ID,
-      customer_id: customer.CUSTOMER_ID, // 추가      
+      user_id: safeUserId,
+      customer_id: customer.CUSTOMER_ID,
       name: customer.CUSTOMER_NAME ?? "",
       email: customer.CUSTOMER_EMAIL ?? "",
       contact: customer.CUSTOMER_PHONE ?? "",

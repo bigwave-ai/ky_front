@@ -16,12 +16,12 @@ import { withAppPrefix } from '@/config/environment'
  * 01. 구분     : Page 컴포넌트
  * 02. 타입     : Client Component
  * 03. 업무구분  : 멤버, 관리자 권한 - 설비 영향 분석 시뮬레이션 페이지
- * 04. 설명     : 4단계(선택 > 조건설정 > 로딩 > 결과) 시뮬레이션 UI 제공
+ * 03. 설명     : 4단계(선택 > 조건설정 > 로딩 > 결과) 시뮬레이션 UI 제공
  *                - 장비 목록 조회(고객별)
  *                - 불러오기: Python /api/simulate/template/{device_id} 연동
  *                - Simulation Run: Python /api/simulate/predict 연동
- * 05. 작성일자  : 2026.04.13
- * 06. 작성자   : Codex
+ * 04. 작성일자  : 2026.04.13
+ * 05. 작성자   : 이우창
  */
 
 type ConditionKeyType =
@@ -49,7 +49,6 @@ type ResultRowType = {
 
 type DiffDirectionType = 'increase' | 'decrease' | 'flat'
 
-
 type SimulationSummaryType = {
   line15Prefix: string
   line15Value: string
@@ -67,7 +66,6 @@ type SimulationResultType = {
   impacts: CommonHorizontalBarItemType[]
   yAxisTicks: number[]
 }
-
 
 type DeviceOptionType = {
   deviceId: string
@@ -142,6 +140,7 @@ type RunSimulationRequestType = {
   overrides: Record<string, number>
 }
 
+/******************** 변수 영역 ********************/
 const CONDITION_META: Record<ConditionKeyType, Omit<ConditionRowType, 'key' | 'value'>> = {
   PRESSURE: { label: '압력 (Pressure)', min: 0, max: 10, step: 0.1, digits: 1 },
   TEMPERATURE: { label: '온도 (℃)', min: 0, max: 150, step: 1, digits: 0 },
@@ -149,7 +148,7 @@ const CONDITION_META: Record<ConditionKeyType, Omit<ConditionRowType, 'key' | 'v
   AVGVOLTAGE: { label: '평균 전압 (Volt)', min: 0, max: 2000, step: 1, digits: 0 },
   AVGCURRENT: { label: '평균 전류 (A)', min: 0, max: 3000, step: 1, digits: 0 },
   FACTOR: { label: '역률 (Factor)', min: -1, max: 1, step: 0.01, digits: 2 },
-}
+} // 조건별 UI/입력 범위 메타 정보
 
 const CONDITION_ORDER: ConditionKeyType[] = [
   'PRESSURE',
@@ -158,67 +157,74 @@ const CONDITION_ORDER: ConditionKeyType[] = [
   'AVGVOLTAGE',
   'AVGCURRENT',
   'FACTOR',
-]
+] // 조건 표시 순서
 
+/******************** 함수 영역 ********************/
+// 조건 행 배열을 key-value 맵 형태로 변환하는 함수
 const toValueMap = (rows: ConditionRowType[]) =>
   Object.fromEntries(rows.map((row) => [row.key, row.value]))
 
+// 값을 최소/최대 범위로 제한하는 함수
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
 
+// step 단위로 스냅 후 digits 자리수로 반올림하는 함수
 const roundToStep = (value: number, step: number, digits: number) => {
-  const snapped = Math.round(value / step) * step
+  const snapped = Math.round(value / step) * step // step 단위 보정값
   return Number(snapped.toFixed(digits))
 }
 
+// 세션(localStorage)에서 customer_id를 추출하는 함수
 const getCustomerIdFromSession = () => {
   if (typeof window === 'undefined') return ''
-  const raw = localStorage.getItem('session.userInfo')
+  const raw = localStorage.getItem('session.userInfo') // 세션 원본 문자열
   if (!raw) return ''
   try {
-    const parsed = JSON.parse(raw) as { customer_id?: string; customerId?: string }
+    const parsed = JSON.parse(raw) as { customer_id?: string; customerId?: string } // 파싱된 세션 객체
     return String(parsed.customer_id ?? parsed.customerId ?? '').trim()
   } catch {
     return ''
   }
 }
 
+// 숫자 변환 실패 시 fallback을 반환하는 안전 숫자 변환 함수
 const safeNum = (value: unknown, fallback = 0) => {
-  const n = Number(value)
+  const n = Number(value) // 숫자 변환 결과
   return Number.isFinite(n) ? n : fallback
 }
 
+// 증감 방향(increase/decrease/flat)을 판별하는 함수
 const getDiffDirection = (delta: number): DiffDirectionType => {
   if (delta > 0) return 'increase'
   if (delta < 0) return 'decrease'
   return 'flat'
 }
 
-
+// 바 차트 Y축 틱을 데이터 범위에 맞게 생성하는 함수
 const buildNiceYAxisTicks = (values: number[]): number[] => {
-  const valid = values.filter((v) => Number.isFinite(v))
+  const valid = values.filter((v) => Number.isFinite(v)) // 유효 숫자만 필터
   if (!valid.length) return [100, 80, 60, 40, 20, 0]
 
-  const minVal = Math.min(...valid)
-  const maxVal = Math.max(...valid)
-  const range = Math.max(maxVal - minVal, 1)
-  const padding = range * 0.12
-  const rawMin = minVal - padding
-  const rawMax = maxVal + padding
-  const roughStep = Math.max((rawMax - rawMin) / 5, 1e-6)
+  const minVal = Math.min(...valid) // 최소값
+  const maxVal = Math.max(...valid) // 최대값
+  const range = Math.max(maxVal - minVal, 1) // 최소 범위 보장
+  const padding = range * 0.12 // 상하 패딩
+  const rawMin = minVal - padding // 패딩 포함 최소값
+  const rawMax = maxVal + padding // 패딩 포함 최대값
+  const roughStep = Math.max((rawMax - rawMin) / 5, 1e-6) // 대략적인 단계
 
-  const magnitude = 10 ** Math.floor(Math.log10(roughStep))
-  const normalized = roughStep / magnitude
-  let stepBase = 1
+  const magnitude = 10 ** Math.floor(Math.log10(roughStep)) // 자릿수 크기
+  const normalized = roughStep / magnitude // 정규화된 단계
+  let stepBase = 1 // 단계 베이스
   if (normalized > 5) stepBase = 10
   else if (normalized > 2) stepBase = 5
   else if (normalized > 1) stepBase = 2
 
-  const step = stepBase * magnitude
-  const axisMin = Math.floor(rawMin / step) * step
-  const axisMax = Math.ceil(rawMax / step) * step
+  const step = stepBase * magnitude // 최종 단계값
+  const axisMin = Math.floor(rawMin / step) * step // 축 최소값
+  const axisMax = Math.ceil(rawMax / step) * step // 축 최대값
 
-  const decimals = step < 1 ? 2 : 0
-  const ticks: number[] = []
+  const decimals = step < 1 ? 2 : 0 // 표시 소수점 자리수
+  const ticks: number[] = [] // Y축 틱 배열
   for (let v = axisMax; v >= axisMin; v -= step) {
     ticks.push(Number(v.toFixed(decimals)))
     if (ticks.length > 10) break
@@ -226,16 +232,20 @@ const buildNiceYAxisTicks = (values: number[]): number[] => {
   return ticks.length ? ticks : [axisMax, axisMin]
 }
 
+// kW 값을 표기 문자열로 변환하는 함수
 const formatKw = (value: number) => `${value.toFixed(2)} kW`
+
+// kW 값을 부호(+/-) 포함 문자열로 변환하는 함수
 const signedKw = (value: number) => `${value >= 0 ? '+' : ''}${value.toFixed(2)} kW`
 
+// 고객 ID 기준 장비 목록을 조회하는 API 함수
 const fetchMemberDevices = async (customerId: string): Promise<DeviceOptionType[]> => {
   const response = await fetch(
     withAppPrefix(`/api/member/getDevices?customerId=${encodeURIComponent(customerId)}`),
     { method: 'GET' },
   )
 
-  const json = (await response.json()) as GetMemberDevicesResponseType
+  const json = (await response.json()) as GetMemberDevicesResponseType // API 응답 JSON
   if (!response.ok || !json.success) {
     throw new Error(json.message ?? '장비 목록 조회 실패')
   }
@@ -243,18 +253,19 @@ const fetchMemberDevices = async (customerId: string): Promise<DeviceOptionType[
   return Array.isArray(json.data) ? json.data : []
 }
 
+// template 응답의 editable_fields를 화면용 조건 행으로 변환하는 함수
 const buildConditionRowsFromEditableFields = (
   editableFields: Partial<Record<ConditionKeyType, number>> | undefined,
 ): ConditionRowType[] => {
   if (!editableFields) return []
 
   return CONDITION_ORDER.flatMap((key) => {
-    const rawValue = editableFields[key]
+    const rawValue = editableFields[key] // 원본 입력값
     if (typeof rawValue !== 'number' || !Number.isFinite(rawValue)) return []
 
-    const meta = CONDITION_META[key]
-    const clamped = clamp(rawValue, meta.min, meta.max)
-    const value = roundToStep(clamped, meta.step, meta.digits)
+    const meta = CONDITION_META[key] // 해당 키 메타
+    const clamped = clamp(rawValue, meta.min, meta.max) // 범위 제한값
+    const value = roundToStep(clamped, meta.step, meta.digits) // step/자리수 보정값
 
     return [
       {
@@ -270,6 +281,7 @@ const buildConditionRowsFromEditableFields = (
   })
 }
 
+// 불러오기(template) API를 호출해 조건/기준 정보를 구성하는 함수
 const fetchSimulationTemplate = async ({
   deviceId,
   queryHour,
@@ -281,10 +293,10 @@ const fetchSimulationTemplate = async ({
 }> => {
   const url = withAppPrefix(
     `/api/simulate/template/${encodeURIComponent(deviceId)}?lookback_hours=${queryHour}`,
-  )
+  ) // template 조회 URL
 
   const response = await fetch(url, { method: 'GET' })
-  const json = (await response.json().catch(() => null)) as TemplateResponseType | null
+  const json = (await response.json().catch(() => null)) as TemplateResponseType | null // 응답 JSON
 
   if (!response.ok || !json) {
     throw new Error(
@@ -293,15 +305,15 @@ const fetchSimulationTemplate = async ({
     )
   }
 
-  const baseTimestamp = String(json.base_timestamp ?? '').trim()
-  const baseLogId = safeNum(json.base_log_id, NaN)
+  const baseTimestamp = String(json.base_timestamp ?? '').trim() // 기준 시각
+  const baseLogId = safeNum(json.base_log_id, NaN) // 기준 로그 ID
 
   if (!baseTimestamp || !Number.isFinite(baseLogId)) {
     throw new Error('템플릿 응답에 base_timestamp/base_log_id가 없어 실행할 수 없습니다.')
   }
 
-  const conditionRows = buildConditionRowsFromEditableFields(json.editable_fields)
-  const initialValues = toValueMap(conditionRows)
+  const conditionRows = buildConditionRowsFromEditableFields(json.editable_fields) // 조건 행 데이터
+  const initialValues = toValueMap(conditionRows) // 초기 조건값 맵
 
   return {
     conditionRows,
@@ -311,6 +323,7 @@ const fetchSimulationTemplate = async ({
   }
 }
 
+// Simulation Run(predict) API를 호출하는 함수
 const fetchSimulationPredict = async (
   payload: RunSimulationRequestType,
 ): Promise<PredictResponseType> => {
@@ -326,7 +339,7 @@ const fetchSimulationPredict = async (
     }),
   })
 
-  const json = (await response.json().catch(() => null)) as PredictResponseType | null
+  const json = (await response.json().catch(() => null)) as PredictResponseType | null // 응답 JSON
   if (!response.ok || !json) {
     throw new Error(
       (json as any)?.message ?? `시뮬레이션 예측 실행에 실패했습니다. (HTTP ${response.status})`,
@@ -336,13 +349,14 @@ const fetchSimulationPredict = async (
   return json
 }
 
+// baseline/simulated 블록에서 15분/30분 예측값을 안전 추출하는 함수
 const getPredValue = (
   block: PredictResponseType['baseline'] | PredictResponseType['simulated'] | undefined,
 ) => {
   if (!block) return null
-  const first = Array.isArray(block.preds) ? block.preds[0] : undefined
-  const y15 = safeNum(first?.y_15_pred, NaN)
-  const y30 = safeNum(first?.y_30_pred, NaN)
+  const first = Array.isArray(block.preds) ? block.preds[0] : undefined // 첫 예측 결과
+  const y15 = safeNum(first?.y_15_pred, NaN) // 15분 예측값
+  const y30 = safeNum(first?.y_30_pred, NaN) // 30분 예측값
   if (!Number.isFinite(y15) || !Number.isFinite(y30)) return null
 
   return {
@@ -353,6 +367,7 @@ const getPredValue = (
   }
 }
 
+// 입력 영향도 항목을 화면용 바 데이터로 변환하는 함수
 const buildImpactItems = (
   influence: Record<string, number> | undefined,
   changedKeys: Set<string>,
@@ -362,11 +377,11 @@ const buildImpactItems = (
   const entries = Object.entries(influence ?? {})
     .filter(([key]) => changedKeys.has(key))
     .map(([key, value]) => [key, safeNum(value, NaN)] as const)
-    .filter(([, value]) => Number.isFinite(value))
+    .filter(([, value]) => Number.isFinite(value)) // 유효한 변경 항목만 추출
 
   if (!entries.length) return []
 
-  const maxAbs = Math.max(...entries.map(([, v]) => Math.abs(v)), 1)
+  const maxAbs = Math.max(...entries.map(([, v]) => Math.abs(v)), 1) // 정규화 기준 최대값
 
   return entries
     .map(([key, value]) => ({
@@ -376,28 +391,30 @@ const buildImpactItems = (
     .sort((a, b) => b.rate - a.rate)
 }
 
+// predict 응답을 결과 카드/차트 데이터로 가공하는 함수
 const buildSimulationResult = (
   predict: PredictResponseType,
   equipmentName: string,
   changedKeys: Set<string>,
 ): SimulationResultType => {
-  const baseline = getPredValue(predict.baseline)
-  const simulated = getPredValue(predict.simulated)
+  const baseline = getPredValue(predict.baseline) // 기준 예측값
+  const simulated = getPredValue(predict.simulated) // 시뮬레이션 예측값
 
   if (!baseline || !simulated) {
     throw new Error('예측 응답 형식이 올바르지 않습니다. baseline/simulated 값을 확인하세요.')
   }
 
-  const diff15 = simulated.y15 - baseline.y15
-  const diff30 = simulated.y30 - baseline.y30
+  const diff15 = simulated.y15 - baseline.y15 // 15분 차이(kW)
+  const diff30 = simulated.y30 - baseline.y30 // 30분 차이(kW)
 
-  const pct15 = baseline.y15 !== 0 ? (diff15 / baseline.y15) * 100 : 0
-  const pct30 = baseline.y30 !== 0 ? (diff30 / baseline.y30) * 100 : 0
+  const pct15 = baseline.y15 !== 0 ? (diff15 / baseline.y15) * 100 : 0 // 15분 증감률
+  const pct30 = baseline.y30 !== 0 ? (diff30 / baseline.y30) * 100 : 0 // 30분 증감률
 
-  const yAxisTicks = buildNiceYAxisTicks([baseline.y15, simulated.y15, baseline.y30, simulated.y30])
-  const domainMin = Math.min(...yAxisTicks)
-  const domainMax = Math.max(...yAxisTicks)
+  const yAxisTicks = buildNiceYAxisTicks([baseline.y15, simulated.y15, baseline.y30, simulated.y30]) // 동적 Y축
+  const domainMin = Math.min(...yAxisTicks) // Y축 최소
+  const domainMax = Math.max(...yAxisTicks) // Y축 최대
 
+  // 값 -> 바 높이(%) 변환 함수
   const toHeight = (v: number) => {
     if (domainMax === domainMin) return 50
     const ratio = ((v - domainMin) / (domainMax - domainMin)) * 100
@@ -406,12 +423,16 @@ const buildSimulationResult = (
 
   const summary: SimulationSummaryType = {
     line15Prefix: '15분 예측값이 기준 대비',
-    line15Value: ` ${Math.abs(pct15).toFixed(2)}% ${pct15 >= 0 ? '증가' : pct15 < 0 ? '감소' : '유지'} (${signedKw(diff15)})`,
+    line15Value: ` ${Math.abs(pct15).toFixed(2)}% ${
+      pct15 >= 0 ? '증가' : pct15 < 0 ? '감소' : '유지'
+    } (${signedKw(diff15)})`,
     line15Direction: getDiffDirection(diff15),
     line30Prefix: '30분 예측값이 기준 대비',
-    line30Value: ` ${Math.abs(pct30).toFixed(2)}% ${pct30 >= 0 ? '증가' : pct30 < 0 ? '감소' : '유지'} (${signedKw(diff30)})`,
+    line30Value: ` ${Math.abs(pct30).toFixed(2)}% ${
+      pct30 >= 0 ? '증가' : pct30 < 0 ? '감소' : '유지'
+    } (${signedKw(diff30)})`,
     line30Direction: getDiffDirection(diff30),
-  }
+  } // 요약 영역 문구
 
   const baseResult: ResultRowType[] = [
     { label: '장비 명', value: equipmentName },
@@ -419,7 +440,7 @@ const buildSimulationResult = (
     { label: '기준 시간', value: baseline.baseTimestamp || '-' },
     { label: '15분 예측값(전력 사용량 단위: kW)', value: baseline.y15.toFixed(2) },
     { label: '30분 예측값(전력 사용량 단위: kW)', value: baseline.y30.toFixed(2) },
-  ]
+  ] // 기준 예측결과 카드 데이터
 
   const simulationResult: ResultRowType[] = [
     { label: '장비 명', value: equipmentName },
@@ -427,16 +448,16 @@ const buildSimulationResult = (
     { label: '기준 시간', value: simulated.baseTimestamp || '-' },
     { label: '15분 예측값(전력 사용량 단위: kW)', value: simulated.y15.toFixed(2) },
     { label: '30분 예측값(전력 사용량 단위: kW)', value: simulated.y30.toFixed(2) },
-  ]
+  ] // 시뮬레이션 결과 카드 데이터
 
   const bars: CommonBarChartItemType[] = [
     { label: '15분 기준값', value: formatKw(baseline.y15), height: toHeight(baseline.y15), pred: false },
     { label: '15분 시뮬값', value: formatKw(simulated.y15), height: toHeight(simulated.y15), pred: true },
     { label: '30분 기준값', value: formatKw(baseline.y30), height: toHeight(baseline.y30), pred: false },
     { label: '30분 시뮬값', value: formatKw(simulated.y30), height: toHeight(simulated.y30), pred: true },
-  ]
+  ] // 기준 vs 시뮬레이션 비교 바 차트 데이터
 
-  const impacts = buildImpactItems(predict.input_influence, changedKeys)
+  const impacts = buildImpactItems(predict.input_influence, changedKeys) // 입력 영향도 바 데이터
 
   return {
     summary,
@@ -449,36 +470,36 @@ const buildSimulationResult = (
 }
 
 export default function SimulationPage() {
-  /******************** 변수영역 ********************/
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
+  /******************** 변수 영역 ********************/
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1) // 화면 단계(1:선택, 2:조건, 3:로딩, 4:결과)
 
-  const [equipment, setEquipment] = useState('') // DEVICE_ID
-  const [queryHour, setQueryHour] = useState(24)
+  const [equipment, setEquipment] = useState('') // 선택 장비 ID(DEVICE_ID)
+  const [queryHour, setQueryHour] = useState(24) // 조회 시간(1~744)
 
-  const [deviceOptions, setDeviceOptions] = useState<DeviceOptionType[]>([])
-  const [isLoadingEquipment, setIsLoadingEquipment] = useState(false)
+  const [deviceOptions, setDeviceOptions] = useState<DeviceOptionType[]>([]) // 장비 선택 옵션
+  const [isLoadingEquipment, setIsLoadingEquipment] = useState(false) // 장비 목록 로딩 여부
 
-  const [isFetchingInitial, setIsFetchingInitial] = useState(false)
-  const [isRunning, setIsRunning] = useState(false)
+  const [isFetchingInitial, setIsFetchingInitial] = useState(false) // 불러오기(template) 실행 여부
+  const [isRunning, setIsRunning] = useState(false) // Simulation Run 실행 여부
 
-  const [conditionRows, setConditionRows] = useState<ConditionRowType[]>([])
-  const [conditionValues, setConditionValues] = useState<Record<string, number>>({})
-  const [initialConditionValues, setInitialConditionValues] = useState<Record<string, number>>({})
+  const [conditionRows, setConditionRows] = useState<ConditionRowType[]>([]) // 조건 행 리스트
+  const [conditionValues, setConditionValues] = useState<Record<string, number>>({}) // 현재 조건값 맵
+  const [initialConditionValues, setInitialConditionValues] = useState<Record<string, number>>({}) // 초기 조건값 맵
 
-  const [templateContext, setTemplateContext] = useState<TemplateContextType | null>(null)
-  const [resultData, setResultData] = useState<SimulationResultType | null>(null)
+  const [templateContext, setTemplateContext] = useState<TemplateContextType | null>(null) // 실행에 필요한 기준 컨텍스트
+  const [resultData, setResultData] = useState<SimulationResultType | null>(null) // 최종 결과 데이터
 
-  const [warnOpen, setWarnOpen] = useState(false)
-  const [warnTitle, setWarnTitle] = useState('')
-  const [warnDetail, setWarnDetail] = useState('')
+  const [warnOpen, setWarnOpen] = useState(false) // 경고 모달 오픈 여부
+  const [warnTitle, setWarnTitle] = useState('') // 경고 모달 제목
+  const [warnDetail, setWarnDetail] = useState('') // 경고 모달 상세 내용
 
   const selectedEquipmentName = useMemo(
     () => deviceOptions.find((d) => d.deviceId === equipment)?.deviceName ?? '-',
     [deviceOptions, equipment],
-  )
+  ) // 선택 장비명
 
-  const showCondition = step >= 2
-  const showResult = step === 4 && resultData !== null
+  const showCondition = step >= 2 // 조건 카드 표시 여부
+  const showResult = step === 4 && resultData !== null // 결과 카드 표시 여부
   const canRun =
     step >= 2 &&
     !isFetchingInitial &&
@@ -487,19 +508,22 @@ export default function SimulationPage() {
     Boolean(equipment) &&
     Boolean(templateContext) &&
     templateContext?.deviceId === equipment &&
-    conditionRows.length > 0
+    conditionRows.length > 0 // Simulation Run 가능 여부
 
-  const currentResult = resultData
+  const currentResult = resultData // 렌더링용 결과 참조
 
-  /******************** 함수영역 ********************/
+  /******************** 함수 영역 ********************/
+  // 경고 모달 오픈 함수
   const openWarn = (title: string, detail: string) => {
     setWarnTitle(title)
     setWarnDetail(detail)
     setWarnOpen(true)
   }
 
+  // 경고 모달 닫기 함수
   const closeWarn = () => setWarnOpen(false)
 
+  // 시뮬레이션 상태를 초기화하는 함수(장비/시간 변경 시 사용)
   const resetSimulationState = () => {
     setStep(1)
     setConditionRows([])
@@ -509,36 +533,40 @@ export default function SimulationPage() {
     setResultData(null)
   }
 
+  // 장비 선택 변경 처리 함수
   const handleEquipmentChange = (nextDeviceId: string) => {
     setEquipment(nextDeviceId)
     resetSimulationState()
   }
 
+  // 조회 시간 변경 처리 함수(범위 보정 포함)
   const handleQueryHourChange = (nextHour: number) => {
-    const normalized = Math.max(1, Math.min(744, Math.floor(nextHour)))
+    const normalized = Math.max(1, Math.min(744, Math.floor(nextHour))) // 1~744 정수 제한
     setQueryHour(normalized)
     resetSimulationState()
   }
 
+  // 조건 슬라이더 값 변경 처리 함수
   const handleConditionChange = (key: string, value: number) => {
-    const row = conditionRows.find((r) => r.key === key)
+    const row = conditionRows.find((r) => r.key === key) // 대상 조건 행
     if (!row) return
 
-    const clamped = clamp(value, row.min, row.max)
-    const rounded = roundToStep(clamped, row.step, row.digits)
+    const clamped = clamp(value, row.min, row.max) // 범위 제한값
+    const rounded = roundToStep(clamped, row.step, row.digits) // step/자리수 보정값
     setConditionValues((prev) => ({ ...prev, [key]: rounded }))
   }
 
+  // 초기값 대비 변경된 항목만 overrides로 구성하는 함수
   const buildOverrides = () => {
-    const overrides: Record<string, number> = {}
-    const changedKeys = new Set<string>()
+    const overrides: Record<string, number> = {} // 변경값 맵
+    const changedKeys = new Set<string>() // 변경 키 집합
 
     conditionRows.forEach((row) => {
-      const current = safeNum(conditionValues[row.key], NaN)
+      const current = safeNum(conditionValues[row.key], NaN) // 현재값
       if (!Number.isFinite(current)) return
 
-      const original = safeNum(initialConditionValues[row.key], NaN)
-      const changed = !Number.isFinite(original) || Math.abs(current - original) >= row.step / 2
+      const original = safeNum(initialConditionValues[row.key], NaN) // 초기값
+      const changed = !Number.isFinite(original) || Math.abs(current - original) >= row.step / 2 // 변경 여부
 
       if (changed) {
         overrides[row.key] = Number(current.toFixed(row.digits))
@@ -549,13 +577,14 @@ export default function SimulationPage() {
     return { overrides, changedKeys }
   }
 
+  // 불러오기(template) 버튼 처리 함수
   const handleLoadInitial = async () => {
     if (isFetchingInitial || isRunning || !equipment) return
 
     setIsFetchingInitial(true)
 
     try {
-      const normalizedHour = Math.max(1, Math.min(744, Math.floor(queryHour)))
+      const normalizedHour = Math.max(1, Math.min(744, Math.floor(queryHour))) // 조회시간 보정
       const loaded = await fetchSimulationTemplate({
         deviceId: equipment,
         queryHour: normalizedHour,
@@ -587,6 +616,7 @@ export default function SimulationPage() {
     }
   }
 
+  // Simulation Run 버튼 처리 함수
   const handleRunSimulation = async () => {
     if (!canRun || !templateContext) return
 
@@ -594,7 +624,7 @@ export default function SimulationPage() {
     setStep(3)
 
     try {
-    const { overrides, changedKeys } = buildOverrides()
+      const { overrides, changedKeys } = buildOverrides() // 변경값/변경키 구성
 
       const predict = await fetchSimulationPredict({
         deviceId: equipment,
@@ -619,28 +649,32 @@ export default function SimulationPage() {
     }
   }
 
+  // min/max 기준으로 값의 퍼센트 위치를 계산하는 함수
   const toPercent = (min: number, max: number, value: number) => {
     if (max === min) return 0
-    const percent = ((value - min) / (max - min)) * 100
+    const percent = ((value - min) / (max - min)) * 100 // 상대 위치(%)
     return Math.max(0, Math.min(100, percent))
   }
 
+  // 숫자를 소수점 자리수(digits)로 문자열 포맷하는 함수
   const formatValue = (value: number, digits: number) => value.toFixed(digits)
 
+  // 결과 리스트에서 예측값 행 여부를 판별하는 함수
   const isForecastValueRow = (label: string) =>
     label.includes('15분 예측값') || label.includes('30분 예측값')
 
-  // 7) 요약 렌더링 span class 동적화 (summaryBox 내부)
+  // 요약 문구 색상 클래스를 방향값에 맞춰 반환하는 함수
   const getSummaryClassName = (dir: DiffDirectionType) => {
     if (dir === 'increase') return mmc.simulation_summaryIncreaseText
     if (dir === 'decrease') return mmc.simulation_summaryDecreaseText
     return mmc.simulation_summaryNeutralText
   }
 
-  /******************** 실행영역 ********************/
+  /******************** 수행 영역 ********************/
   useEffect(() => {
+    // 초기 진입 시 세션의 customer_id 기준으로 장비 목록을 조회한다.
     const loadDevices = async () => {
-      const customerId = getCustomerIdFromSession()
+      const customerId = getCustomerIdFromSession() // 세션 고객 ID
       if (!customerId) {
         setDeviceOptions([])
         setEquipment('')
@@ -649,11 +683,11 @@ export default function SimulationPage() {
 
       setIsLoadingEquipment(true)
       try {
-        const list = await fetchMemberDevices(customerId)
+        const list = await fetchMemberDevices(customerId) // 장비 목록 조회
         setDeviceOptions(list)
         setEquipment((prev) => {
-          if (prev && list.some((item) => item.deviceId === prev)) return prev
-          return list[0]?.deviceId ?? ''
+          if (prev && list.some((item) => item.deviceId === prev)) return prev // 기존 선택 유지
+          return list[0]?.deviceId ?? '' // 없으면 첫 장비 선택
         })
       } catch (error: any) {
         console.error(error)
@@ -666,7 +700,7 @@ export default function SimulationPage() {
     }
 
     loadDevices()
-  }, [])
+  }, []) // 마운트 시 1회 실행
 
   return (
     <div className={mmc.simulation_root}>
@@ -722,7 +756,7 @@ export default function SimulationPage() {
               max={744}
               step={1}
               onChange={(e) => {
-                const next = Number(e.target.value)
+                const next = Number(e.target.value) // 입력 숫자
                 if (Number.isNaN(next)) {
                   handleQueryHourChange(1)
                   return
@@ -765,8 +799,8 @@ export default function SimulationPage() {
             <div className={mmc.simulation_conditionRows}>
               {conditionRows.length ? (
                 conditionRows.map((row) => {
-                  const currentValue = conditionValues[row.key] ?? row.value
-                  const sliderPercent = toPercent(row.min, row.max, currentValue)
+                  const currentValue = conditionValues[row.key] ?? row.value // 현재 표시값
+                  const sliderPercent = toPercent(row.min, row.max, currentValue) // 슬라이더 퍼센트 위치
 
                   return (
                     <div key={row.key} className={mmc.simulation_conditionRow}>
@@ -893,7 +927,11 @@ export default function SimulationPage() {
                 <div className={mmc.simulation_resultRight}>
                   <div className={mmc.simulation_chartBox}>
                     <h4 className={mmc.simulation_chartTitle}>기준 vs 시뮬레이션 결과 비교</h4>
-                    <CommonBarChart bars={currentResult.bars} yAxisTicks={currentResult.yAxisTicks} valueOffsetPx={6} />
+                    <CommonBarChart
+                      bars={currentResult.bars}
+                      yAxisTicks={currentResult.yAxisTicks}
+                      valueOffsetPx={6}
+                    />
                   </div>
 
                   <div className={mmc.simulation_impactBox}>

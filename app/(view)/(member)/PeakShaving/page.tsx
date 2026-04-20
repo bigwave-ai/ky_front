@@ -14,12 +14,12 @@ import { withAppPrefix } from '@/config/environment'
 /*
  * 01. 구분     : Page 컴포넌트
  * 02. 타입     : Client Component
- * 03. 업무구분 : 멤버, 관리자 권한 - MILP 피크 분배 대시보드
- * 04. 설명     : MILP 피크 분배 시뮬레이션 입력/실행/결과 UI
+ * 03. 업무구분  : 멤버, 관리자 권한 - MILP 피크 분배 대시보드
+ * 03. 설명     : MILP 피크 분배 시뮬레이션 입력/실행/결과 UI
  *                - Python API 연동
  *                - 장비명 DB 조회 연동
- * 05. 작성일자 : 2026.04.08
- * 06. 작성자   : Codex
+ * 04. 작성일자  : 2026.04.08
+ * 05. 작성자   : 이우창
  */
 
 type PeakDispatchDeviceType = {
@@ -59,19 +59,24 @@ type PeakRecommendationType = {
   base30Kw: number
 }
 
-/******************** 유틸 함수 ********************/
+/******************** 변수 영역 ********************/
+
+/******************** 함수 영역 ********************/
+// 값이 숫자가 아니면 fallback을 반환하는 숫자 정규화 함수
 const toNumber = (value: unknown, fallback = 0) => {
-  const num = Number(value)
+  const num = Number(value) // 숫자 변환 결과
   return Number.isFinite(num) ? num : fallback
 }
 
+// 배열 값을 문자열 배열로 정규화하는 함수
 const toStringArray = (value: unknown) => {
   if (!Array.isArray(value)) return []
   return value.map((v) => String(v ?? '').trim()).filter(Boolean)
 }
 
+// MILP API 응답을 화면에서 사용하는 표준 구조로 정규화하는 함수
 const normalizePeakDispatchResponse = (raw: any): PeakDispatchResponseType => {
-  const devices = Array.isArray(raw?.devices) ? raw.devices : []
+  const devices = Array.isArray(raw?.devices) ? raw.devices : [] // 장비 배열 원본
 
   return {
     success: typeof raw?.success === 'boolean' ? raw.success : undefined,
@@ -98,14 +103,15 @@ const normalizePeakDispatchResponse = (raw: any): PeakDispatchResponseType => {
   }
 }
 
+// 세션(localStorage)에서 customer_id를 읽어오는 함수
 const getCustomerIdFromSession = () => {
-  if (typeof window === 'undefined') return ''
+  if (typeof window === 'undefined') return '' // 클라이언트 환경 체크
 
-  const raw = localStorage.getItem('session.userInfo')
+  const raw = localStorage.getItem('session.userInfo') // 세션 원문
   if (!raw) return ''
 
   try {
-    const parsed = JSON.parse(raw) as { customer_id?: string; customerId?: string }
+    const parsed = JSON.parse(raw) as { customer_id?: string; customerId?: string } // 파싱 결과
     return String(parsed.customer_id ?? parsed.customerId ?? '').trim()
   } catch {
     return ''
@@ -114,23 +120,22 @@ const getCustomerIdFromSession = () => {
 
 export default function PeakShavingPage() {
   /******************** 변수 영역 ********************/
-  const [idleThreshold, setIdleThreshold] = useState(0.05)
-  const [queryHour, setQueryHour] = useState(24)
-  const [showEquipmentResult, setShowEquipmentResult] = useState(false)
-  const [isRunning, setIsRunning] = useState(false)
+  const [idleThreshold, setIdleThreshold] = useState(0.05) // 미가동 기준값(0~1, 소수 2자리)
+  const [queryHour, setQueryHour] = useState(24) // 조회 시간(시간 단위)
+  const [showEquipmentResult, setShowEquipmentResult] = useState(false) // 결과 카드 표시 여부
+  const [isRunning, setIsRunning] = useState(false) // MILP 실행 중 여부
 
-  const [milpResult, setMilpResult] = useState<PeakDispatchResponseType | null>(null)
-  const [deviceNameMap, setDeviceNameMap] = useState<Record<string, string>>({})
+  const [milpResult, setMilpResult] = useState<PeakDispatchResponseType | null>(null) // MILP 결과 원본
+  const [deviceNameMap, setDeviceNameMap] = useState<Record<string, string>>({}) // device_id -> 장비명 매핑
 
-  const [warnOpen, setWarnOpen] = useState(false)
-  const [warnTitle, setWarnTitle] = useState('')
-  const [warnDetail, setWarnDetail] = useState('')
+  const [warnOpen, setWarnOpen] = useState(false) // 경고 모달 오픈 여부
+  const [warnTitle, setWarnTitle] = useState('') // 경고 모달 제목
+  const [warnDetail, setWarnDetail] = useState('') // 경고 모달 상세 메시지
 
-  /******************** 파생 데이터 ********************/
-  const analysisEquipmentCount = milpResult?.device_count ?? 0
-  const idleEquipmentCount = milpResult?.idle_device_ids.length ?? 0
-  const skippedEquipmentCount = milpResult?.skipped_devices.length ?? 0
-  const totalEquipmentCount = analysisEquipmentCount + idleEquipmentCount + skippedEquipmentCount
+  const analysisEquipmentCount = milpResult?.device_count ?? 0 // 분석 장비 수
+  const idleEquipmentCount = milpResult?.idle_device_ids.length ?? 0 // 미가동 장비 수
+  const skippedEquipmentCount = milpResult?.skipped_devices.length ?? 0 // 제외 장비 수
+  const totalEquipmentCount = analysisEquipmentCount + idleEquipmentCount + skippedEquipmentCount // 전체 장비 수
 
   const equipmentLegend: CommonDonutEquipmentItem[] = useMemo(
     () => [
@@ -139,24 +144,24 @@ export default function PeakShavingPage() {
       { label: '제외 장비 수', value: skippedEquipmentCount, color: '#e9a24f', unit: '대' },
     ],
     [analysisEquipmentCount, idleEquipmentCount, skippedEquipmentCount],
-  )
+  ) // 도넛 차트 범례 데이터
 
-  const peakCut15Kw = milpResult?.peak_15_reduction ?? 0
-  const peakCut15Rate = milpResult?.peak_15_reduction_pct ?? 0
-  const peakCut30Kw = milpResult?.peak_30_reduction ?? 0
-  const peakCut30Rate = milpResult?.peak_30_reduction_pct ?? 0
+  const peakCut15Kw = milpResult?.peak_15_reduction ?? 0 // 15분 피크 절감량(kW)
+  const peakCut15Rate = milpResult?.peak_15_reduction_pct ?? 0 // 15분 피크 절감률(%)
+  const peakCut30Kw = milpResult?.peak_30_reduction ?? 0 // 30분 피크 절감량(kW)
+  const peakCut30Rate = milpResult?.peak_30_reduction_pct ?? 0 // 30분 피크 절감률(%)
 
   const recommendations: PeakRecommendationType[] = useMemo(() => {
     if (!milpResult) return []
 
     return milpResult.devices.map((item, index) => {
-      const fallbackName = `Compressor${index + 1}`
-      const equipmentName = deviceNameMap[item.device_id] || fallbackName
+      const fallbackName = `Compressor${index + 1}` // 장비명 매핑 실패 시 기본 이름
+      const equipmentName = deviceNameMap[item.device_id] || fallbackName // 최종 장비명
 
       const lines = String(item.distribution_text || '')
         .split('\n')
         .map((line) => line.trim())
-        .filter(Boolean)
+        .filter(Boolean) // 추천 문구 줄 단위 분리
 
       return {
         deviceId: item.device_id,
@@ -166,30 +171,34 @@ export default function PeakShavingPage() {
         base30Kw: item.baseline_30,
       }
     })
-  }, [milpResult, deviceNameMap])
+  }, [milpResult, deviceNameMap]) // 장비별 추천 데이터
 
   const maxPredictValue = useMemo(() => {
     if (!recommendations.length) return 1
     const maxValue = Math.max(
       ...recommendations.flatMap((item) => [item.base15Kw, item.base30Kw]),
-    )
+    ) // 막대차트 최대 기준값 계산
     return Math.max(1, Math.ceil(maxValue * 1.2))
-  }, [recommendations])
+  }, [recommendations]) // 예측 막대차트 최대값
 
   /******************** 함수 영역 ********************/
+  // 경고 모달을 열고 메시지를 설정하는 함수
   const openWarn = (title: string, detail: string) => {
     setWarnTitle(title)
     setWarnDetail(detail)
     setWarnOpen(true)
   }
 
+  // 경고 모달을 닫는 함수
   const closeWarn = () => setWarnOpen(false)
 
+  // 미가동 기준값을 0~1, 소수점 2자리로 보정하는 함수
   const normalizeIdleThreshold = (value: number) => {
-    const clamped = Math.min(1, Math.max(0, value))
+    const clamped = Math.min(1, Math.max(0, value)) // 범위 제한
     return Math.round(clamped * 100) / 100
   }
 
+  // device_id 목록으로 장비명 매핑을 조회하는 함수
   const fetchDeviceNames = async (deviceIds: string[]) => {
     if (!deviceIds.length) return {}
 
@@ -200,7 +209,7 @@ export default function PeakShavingPage() {
         body: JSON.stringify({ device_ids: deviceIds }),
       })
 
-      const json = (await response.json()) as DeviceNameResponseType
+      const json = (await response.json()) as DeviceNameResponseType // 응답 JSON
       if (!response.ok || !json?.success) return {}
 
       return json.data ?? {}
@@ -209,17 +218,18 @@ export default function PeakShavingPage() {
     }
   }
 
+  // MILP 실행 버튼 클릭 시 Python API 호출 및 결과를 반영하는 함수
   const handleRunMilp = async () => {
     if (isRunning) return
 
-    const customerId = getCustomerIdFromSession()
+    const customerId = getCustomerIdFromSession() // 세션 customer_id
     if (!customerId) {
       openWarn('세션 정보 오류', '로그인 사용자 customer_id를 찾을 수 없습니다. 다시 로그인해주세요.')
       return
     }
 
-    const normalizedHour = Math.max(1, Math.floor(queryHour))
-    const normalizedIdle = normalizeIdleThreshold(idleThreshold)
+    const normalizedHour = Math.max(1, Math.floor(queryHour)) // 조회시간 정수/최소 1 보정
+    const normalizedIdle = normalizeIdleThreshold(idleThreshold) // 미가동 기준값 보정
 
     setIsRunning(true)
     setShowEquipmentResult(false)
@@ -231,7 +241,7 @@ export default function PeakShavingPage() {
         lookback_hours: normalizedHour,
         customer_id: customerId,
         idle_op_status_threshold: normalizedIdle,
-      }
+      } // Python API 요청 바디
 
       const response = await fetch(withAppPrefix('/api/optimize/peak-dispatch'), {
         method: 'POST',
@@ -239,11 +249,9 @@ export default function PeakShavingPage() {
         body: JSON.stringify(payload),
       })
 
-      const responseJson = await response.json().catch(() => null)
+      const responseJson = await response.json().catch(() => null) // 응답 파싱(실패 허용)
 
-      /**
-       * 400 에러는 사용자 요구 문구로 고정
-       */
+      // 400 에러는 사용자 요구 문구로 고정 처리
       if (!response.ok) {
         if (response.status === 400) {
           throw new Error('연결된 장비를 찾을 수 없습니다.')
@@ -260,7 +268,7 @@ export default function PeakShavingPage() {
         throw new Error('MILP 응답을 해석할 수 없습니다.')
       }
 
-      const normalized = normalizePeakDispatchResponse(responseJson)
+      const normalized = normalizePeakDispatchResponse(responseJson) // 응답 정규화
 
       if (normalized.success === false) {
         throw new Error(normalized.message ?? 'MILP 실행 실패')
@@ -268,9 +276,9 @@ export default function PeakShavingPage() {
 
       const deviceIds = normalized.devices
         .map((device) => device.device_id)
-        .filter(Boolean)
+        .filter(Boolean) // 결과 장비 ID 목록
 
-      const nameMap = await fetchDeviceNames(deviceIds)
+      const nameMap = await fetchDeviceNames(deviceIds) // 장비명 조회
 
       setMilpResult(normalized)
       setDeviceNameMap(nameMap)
@@ -283,10 +291,14 @@ export default function PeakShavingPage() {
     }
   }
 
+  // kW 단위 표시 문자열 함수
   const formatKw = (value: number) => `${toNumber(value, 0).toFixed(2)} kW`
+
+  // 퍼센트 표시 문자열 함수
   const formatRate = (value: number) => `(${toNumber(value, 0).toFixed(2)}%)`
 
-  /******************** 실행 영역 ********************/
+  /******************** 수행 영역 ********************/
+  // 본 컴포넌트는 useEffect를 사용하지 않고, 사용자 액션 기반으로 API를 수행합니다.
   return (
     <div className={mmc.peak_root}>
       <header className={`${mmc.peak_pageHead} ${mmc.peak_stageFadeUp}`}>
@@ -314,13 +326,13 @@ export default function PeakShavingPage() {
               max={1}
               step={0.01}
               onChange={(e) => {
-                const raw = e.target.value
+                const raw = e.target.value // 입력 문자열
                 if (raw === '') {
                   setIdleThreshold(0)
                   return
                 }
 
-                const next = Number(raw)
+                const next = Number(raw) // 숫자 변환값
                 if (Number.isNaN(next)) return
                 setIdleThreshold(normalizeIdleThreshold(next))
               }}
@@ -342,7 +354,7 @@ export default function PeakShavingPage() {
               min={1}
               step={1}
               onChange={(e) => {
-                const next = Number(e.target.value)
+                const next = Number(e.target.value) // 입력 숫자
                 if (Number.isNaN(next)) {
                   setQueryHour(1)
                   return

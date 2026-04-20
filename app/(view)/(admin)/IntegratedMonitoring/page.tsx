@@ -7,9 +7,9 @@ import imag from '@/app/components/style/resources/css/image.module.css'
 /*
  * 01. 구분     : Page 컴포넌트
  * 02. 타입     : Client Component
- * 03. 업무구분 : 관리자 권한 - 통합 관제 모니터링 페이지
+ * 03. 업무구분  : 관리자권한 - 통합 관제 모니터링 페이지
  * 04. 설명     : 통합 관제 현황/고객사 알람 로그 UI 제공
- * 05. 작성일자 : 2026.03.27
+ * 05. 작성일자  : 2026.04.20
  * 06. 작성자   : 이우창
  */
 
@@ -25,14 +25,14 @@ type AlarmLogRowType = {
 
 export default function IntegratedMonitoringPage() {
   /******************** 변수 영역 ********************/
-  const [activePage, setActivePage] = useState(6)
+  const [activePage, setActivePage] = useState(6) // 현재 선택된 페이지네이션 번호
 
-  const totalCustomerCount = '1,432'
-  const runningCompressorCount = '23,435'
-  const normalCompressorCount = '20,622'
-  const normalRate = 88
-  const warningCompressorCount = '2,813'
-  const warningRate = 12
+  const totalCustomerCount = '1,432' // 전체 고객사 수
+  const runningCompressorCount = '23,435' // 가동 컴프레셔 수
+  const normalCompressorCount = '20,622' // 정상 컴프레셔 수
+  const normalRate = 88 // 정상 비율(%)
+  const warningCompressorCount = '2,813' // 경고 컴프레셔 수
+  const warningRate = 12 // 경고 비율(%)
 
   const alarmRows: AlarmLogRowType[] = useMemo(
     () => [
@@ -42,7 +42,7 @@ export default function IntegratedMonitoringPage() {
         level: '정상',
         customer: 'LH179QA5-EM01(D183)',
         message:
-          'LH179QA5-EM01(D183) 고객사의 A컴프레서에서 정상적으로 잘 동작하고 있으나 확인이 필요합니다.',
+          'LH179QA5-EM01(D183) 고객사의 A컴프레셔에서 정상적으로 작동하고 있으나 확인이 필요합니다.',
       },
       {
         seq: 'RTX-00002',
@@ -50,7 +50,7 @@ export default function IntegratedMonitoringPage() {
         level: '경고',
         customer: 'LH179QA5-EM01(D183)',
         message:
-          'LH179QA5-EM01(D183) 고객사의 B컴프레서에서 경고가 발생하여 확인이 필요합니다.',
+          'LH179QA5-EM01(D183) 고객사의 B컴프레셔에서 경고가 발생하여 확인이 필요합니다.',
       },
       {
         seq: 'RTX-00003',
@@ -58,7 +58,7 @@ export default function IntegratedMonitoringPage() {
         level: '정상',
         customer: 'LH179QA5-EM01(D183)',
         message:
-          'LH179QA5-EM01(D183) 고객사의 A컴프레서에서 정상적으로 잘 동작하고 있으나 확인이 필요합니다.',
+          'LH179QA5-EM01(D183) 고객사의 A컴프레셔에서 정상적으로 작동하고 있으나 확인이 필요합니다.',
       },
       {
         seq: 'RTX-00004',
@@ -66,7 +66,7 @@ export default function IntegratedMonitoringPage() {
         level: '경고',
         customer: 'LH179QA5-EM01(D183)',
         message:
-          'LH179QA5-EM01(D183) 고객사의 B컴프레서에서 경고가 발생하여 확인이 필요합니다.',
+          'LH179QA5-EM01(D183) 고객사의 B컴프레셔에서 경고가 발생하여 확인이 필요합니다.',
       },
       {
         seq: 'RTX-00005',
@@ -74,7 +74,7 @@ export default function IntegratedMonitoringPage() {
         level: '정상',
         customer: 'LH179QA5-EM01(D183)',
         message:
-          'LH179QA5-EM01(D183) 고객사의 A컴프레서에서 정상적으로 잘 동작하고 있으나 확인이 필요합니다.',
+          'LH179QA5-EM01(D183) 고객사의 A컴프레셔에서 정상적으로 작동하고 있으나 확인이 필요합니다.',
       },
       {
         seq: 'RTX-00006',
@@ -82,7 +82,7 @@ export default function IntegratedMonitoringPage() {
         level: '경고',
         customer: 'LH179QA5-EM01(D183)',
         message:
-          'LH179QA5-EM01(D183) 고객사의 B컴프레서에서 경고가 발생하여 확인이 필요합니다.',
+          'LH179QA5-EM01(D183) 고객사의 B컴프레셔에서 경고가 발생하여 확인이 필요합니다.',
       },
       {
         seq: 'RTX-00007',
@@ -90,7 +90,7 @@ export default function IntegratedMonitoringPage() {
         level: '정상',
         customer: 'LH179QA5-EM01(D183)',
         message:
-          'LH179QA5-EM01(D183) 고객사의 A컴프레서에서 정상적으로 잘 동작하고 있으나 확인이 필요합니다.',
+          'LH179QA5-EM01(D183) 고객사의 A컴프레셔에서 정상적으로 작동하고 있으나 확인이 필요합니다.',
       },
       {
         seq: 'RTX-00008',
@@ -98,7 +98,7 @@ export default function IntegratedMonitoringPage() {
         level: '경고',
         customer: 'LH179QA5-EM01(D183)',
         message:
-          'LH179QA5-EM01(D183) 고객사의 B컴프레서에서 경고가 발생하여 확인이 필요합니다.',
+          'LH179QA5-EM01(D183) 고객사의 B컴프레셔에서 경고가 발생하여 확인이 필요합니다.',
       },
       {
         seq: 'RTX-00009',
@@ -106,7 +106,7 @@ export default function IntegratedMonitoringPage() {
         level: '정상',
         customer: 'LH179QA5-EM01(D183)',
         message:
-          'LH179QA5-EM01(D183) 고객사의 A컴프레서에서 정상적으로 잘 동작하고 있으나 확인이 필요합니다.',
+          'LH179QA5-EM01(D183) 고객사의 A컴프레셔에서 정상적으로 작동하고 있으나 확인이 필요합니다.',
       },
       {
         seq: 'RTX-00010',
@@ -114,21 +114,25 @@ export default function IntegratedMonitoringPage() {
         level: '경고',
         customer: 'LH179QA5-EM01(D183)',
         message:
-          'LH179QA5-EM01(D183) 고객사의 B컴프레서에서 경고가 발생하여 확인이 필요합니다.',
+          'LH179QA5-EM01(D183) 고객사의 B컴프레셔에서 경고가 발생하여 확인이 필요합니다.',
       },
     ],
     [],
-  )
+  ) // 테이블 표시용 알람 로그 더미 데이터
+
+  const pages = useMemo(() => Array.from({ length: 10 }, (_, i) => i + 1), []) // 페이지네이션 번호 목록(1~10)
 
   /******************** 함수 영역 ********************/
-  const pages = useMemo(() => Array.from({ length: 10 }, (_, i) => i + 1), [])
+  // 알람 레벨(정상/경고)에 맞는 뱃지 스타일 클래스를 반환하는 함수
+  const getAlarmStatusClassName = (level: AlarmLevelType) =>
+    level === '정상' ? imc.integrated_statusNormal : imc.integrated_statusWarning
 
   /******************** 수행 영역 ********************/
   return (
     <div className={imc.integrated_root}>
       <header className={imc.integrated_pageHead}>
         <h1>시스템 통합 관제 현황</h1>
-        <p>전체 고객사와 컴프레서 가동에 대한 종합적인 정보를 확인하실 수 있습니다.</p>
+        <p>전체 고객사와 컴프레셔 가동에 대한 종합적인 정보를 확인하실 수 있습니다.</p>
       </header>
 
       <section className={imc.integrated_statsGrid}>
@@ -154,8 +158,8 @@ export default function IntegratedMonitoringPage() {
 
         <article className={imc.integrated_statCard}>
           <div className={imc.integrated_statTop}>
-            <h3 className={imc.integrated_titleGreen}>정상 
-              <span style={{ color: "#2B2B2B" }}> 컴프레셔 수</span>
+            <h3 className={imc.integrated_titleGreen}>
+              정상 <span style={{ color: '#2B2B2B' }}>컴프레셔 수</span>
             </h3>
             <div className={imc.integrated_iconWrap}>
               <div className={imag.compressor_circle_green_icon} aria-hidden="true" />
@@ -176,8 +180,8 @@ export default function IntegratedMonitoringPage() {
 
         <article className={imc.integrated_statCard}>
           <div className={imc.integrated_statTop}>
-            <h3 className={imc.integrated_titleRed}>경고
-                <span style={{ color: "#2B2B2B" }}> 컴프레셔 수</span>
+            <h3 className={imc.integrated_titleRed}>
+              경고 <span style={{ color: '#2B2B2B' }}>컴프레셔 수</span>
             </h3>
             <div className={imc.integrated_iconWrap}>
               <div className={imag.compressor_circle_red_icon} aria-hidden="true" />
@@ -223,15 +227,7 @@ export default function IntegratedMonitoringPage() {
                   <td>{row.seq}</td>
                   <td>{row.time}</td>
                   <td>
-                    <span
-                      className={
-                        row.level === '정상'
-                          ? imc.integrated_statusNormal
-                          : imc.integrated_statusWarning
-                      }
-                    >
-                      {row.level}
-                    </span>
+                    <span className={getAlarmStatusClassName(row.level)}>{row.level}</span>
                   </td>
                   <td>{row.customer}</td>
                   <td>{row.message}</td>
@@ -251,7 +247,7 @@ export default function IntegratedMonitoringPage() {
               key={page}
               type="button"
               className={`${imc.integrated_pageNum} ${page === activePage ? imc.integrated_pageNumActive : ''}`}
-              onClick={() => setActivePage(page)}
+              onClick={() => setActivePage(page)} // 페이지 번호 클릭 시 활성 페이지 상태 변경
             >
               {page}
             </button>

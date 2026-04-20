@@ -4,14 +4,24 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import cbc from './Chatbot.module.css'
 import imag from '@/app/components/style/resources/css/image.module.css'
 
-type SpeakerType = 'user' | 'bot'
+/*
+ * 01. 구분     : Page 컴포넌트
+ * 02. 타입     : Client Component
+ * 03. 업무구분  : 멤버권한 - 통합 AI 챗봇
+ * 04. 설명     : 채팅 송수신, 스트리밍 응답 렌더링, 참고문헌 패널(이미지/페이지/확대축소) UI 제공
+ * 05. 작성일자  : 2026.04.20
+ * 06. 작성자   : 이우창
+ */
+
+/******************** 변수 영역 ********************/
+type SpeakerType = 'user' | 'bot' // 메시지 발화자 타입
 
 type ReferenceImageType = {
   url: string
   title?: string
   page?: number | string
   name?: string
-}
+} // 참고문헌 이미지 타입
 
 type ChatMessageType = {
   id: string
@@ -20,41 +30,45 @@ type ChatMessageType = {
   timestamp: string
   reference_image?: ReferenceImageType[]
   reference?: unknown[]
-}
+} // 채팅 메시지 타입
 
 type ChatApiResponseType = {
   success: boolean
   data: ChatMessageType[]
   message?: string
   timestamp: string
-}
+} // 채팅 API 응답 타입
 
-const SESSION_KEY = 'chatSessionId'
-const CHAT_HISTORY_KEY_PREFIX = 'chat_history_'
+const SESSION_KEY = 'chatSessionId' // 세션 ID 저장 키
+const CHAT_HISTORY_KEY_PREFIX = 'chat_history_' // 채팅 이력 저장 키 prefix
 const DEFAULT_REFERENCE_TEXT =
-  '설정 압력보다 낮은 운전이 지속될 경우, 흡입 필터 막힘, 흡입 밸브 고착, 압력 센서 오작동 또는 배출 라인 누설 가능성을 우선 점검해야 합니다.'
+  '설정 압력보다 낮은 운전이 지속될 경우, 흡입 필터 막힘, 흡입 밸브 고착, 압력 센서 오작동 또는 배출 라인 누설 가능성을 우선 점검해야 합니다.' // 참고문헌 기본 문구
 
-const createSessionId = () =>
-  `session_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
+/******************** 함수 영역 ********************/
+// 세션 ID를 생성하는 함수
+const createSessionId = () => `session_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
 
+// 세션 ID를 생성/반환하고 기존 채팅 히스토리를 초기화하는 함수
 const getOrCreateSessionId = () => {
   if (typeof window === 'undefined') return createSessionId()
 
-  // 새로고침 시 기존 대화 기록 제거
+  // 새로고침 시 기존 채팅 기록 제거
   Object.keys(sessionStorage).forEach((key) => {
     if (key.startsWith(CHAT_HISTORY_KEY_PREFIX)) {
       sessionStorage.removeItem(key)
     }
   })
 
-  // 세션 ID도 새로 발급
+  // 세션 ID 새로 발급
   const sessionId = createSessionId()
   sessionStorage.setItem(SESSION_KEY, sessionId)
   return sessionId
 }
 
+// 현재 시간을 ISO 문자열로 반환하는 함수
 const nowIso = () => new Date().toISOString()
 
+// URI 인코딩 실패 시 원문을 반환하는 안전 인코딩 함수
 const safeEncodeUri = (value: string) => {
   try {
     return encodeURI(value)
@@ -63,6 +77,7 @@ const safeEncodeUri = (value: string) => {
   }
 }
 
+// HTML 특수문자를 이스케이프하는 함수
 const escapeHtml = (text: string) =>
   String(text)
     .replace(/&/g, '&amp;')
@@ -71,6 +86,7 @@ const escapeHtml = (text: string) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
 
+// 위험한 HTML/script/event/style/javascript 스킴을 제거하는 함수
 const sanitizeHtml = (raw: string) =>
   raw
     .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
@@ -79,30 +95,33 @@ const sanitizeHtml = (raw: string) =>
     .replace(/\sstyle=(["']).*?\1/gi, '')
     .replace(/javascript:/gi, '')
 
+// 모델의 텍스트 응답을 렌더링 친화적으로 정규화하는 함수
 const normalizeModelMarkdown = (raw: string) => {
   let text = String(raw || '')
     .replace(/\r\n/g, '\n')
     .replace(/\t/g, '  ')
 
-  // HTML table block 분리
+  // HTML table 블록 분리
   text = text.replace(/(<table[\s\S]*?<\/table>)/gi, '\n$1\n')
 
   // 모델이 한 줄로 붙여 보낸 markdown table 복구
   text = text.replace(/\s\|\s\|/g, ' |\n|')
 
-  // 붙어서 온 리스트 복구
+  // 붙어있는 리스트 복구
   text = text.replace(/([^\n])\s-\s(?=[\[\]가-힣A-Za-z0-9])/g, '$1\n- ')
 
-  // 제목/구분선 주변 정리
+  // 제목/구분선 주변 줄바꿈 정리
   text = text.replace(/(#{1,6}[^\n]+)\s-\s/g, '$1\n- ')
   text = text.replace(/\n{3,}/g, '\n\n')
 
   return text.trim()
 }
 
+// markdown table 구분선인지 판별하는 함수
 const isMarkdownTableSeparatorLine = (line: string) =>
   /^\s*\|?(\s*:?-+:?\s*\|)+\s*:?-+:?\s*\|?\s*$/.test(line)
 
+// markdown table 한 줄을 셀 배열로 분리하는 함수
 const splitMarkdownTableCells = (line: string) =>
   line
     .trim()
@@ -111,12 +130,13 @@ const splitMarkdownTableCells = (line: string) =>
     .split('|')
     .map((cell) => cell.trim())
 
+// 인라인 markdown(링크/코드/볼드/이탤릭)을 HTML로 변환하는 함수
 const renderInlineMarkdown = (raw: string) => {
   let value = escapeHtml(raw)
 
   value = value.replace(
     /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-    (_match, label, url) => {
+    (_match: string, label: string, url: string) => {
       const safeUrl = String(url).replace(/"/g, '&quot;')
       return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`
     },
@@ -129,6 +149,7 @@ const renderInlineMarkdown = (raw: string) => {
   return value
 }
 
+// markdown table HTML을 생성하는 함수
 const renderMarkdownTable = (headers: string[], rows: string[][]) => {
   const thead = `<thead><tr>${headers.map((h) => `<th>${renderInlineMarkdown(h)}</th>`).join('')}</tr></thead>`
   const tbody = `<tbody>${rows
@@ -138,12 +159,14 @@ const renderMarkdownTable = (headers: string[], rows: string[][]) => {
   return `<div class="mdTableWrap"><table>${thead}${tbody}</table></div>`
 }
 
+// 모델 메시지 텍스트를 안전한 HTML 블록으로 변환하는 함수
 const toMessageHtml = (text: string) => {
   const normalized = normalizeModelMarkdown(sanitizeHtml(String(text || '')))
   const lines = normalized.split('\n')
   const blocks: string[] = []
   let i = 0
 
+  // 현재 라인이 독립 블록 시작인지 판별하는 함수
   const isBlockStart = (line: string, next: string) => {
     const trimmed = line.trim()
     if (!trimmed) return true
@@ -230,7 +253,6 @@ const toMessageHtml = (text: string) => {
         items.push(lines[i].trim().replace(/^[-*]\s+/, ''))
         i += 1
       }
-
       blocks.push(`<ul>${items.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join('')}</ul>`)
       continue
     }
@@ -265,6 +287,7 @@ const toMessageHtml = (text: string) => {
   return blocks.join('')
 }
 
+// 참고문헌 패널 상단 프리뷰 HTML 생성 함수
 const toReferencePreviewHtml = (text?: string) => {
   if (!text) {
     return `<p>${escapeHtml(DEFAULT_REFERENCE_TEXT)}</p>`
@@ -283,9 +306,9 @@ const toReferencePreviewHtml = (text?: string) => {
 
   const blocks: string[] = []
   let i = 0
-  const MAX_BLOCKS = 6
+  const maxBlocks = 6 // 프리뷰 최대 블록 수
 
-  while (i < lines.length && blocks.length < MAX_BLOCKS) {
+  while (i < lines.length && blocks.length < maxBlocks) {
     const line = lines[i]
 
     const heading = line.match(/^(#{1,6})\s+(.*)$/)
@@ -301,9 +324,7 @@ const toReferencePreviewHtml = (text?: string) => {
         items.push(lines[i].replace(/^[-*]\s+/, ''))
         i += 1
       }
-      blocks.push(
-        `<ul>${items.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join('')}</ul>`,
-      )
+      blocks.push(`<ul>${items.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join('')}</ul>`)
       continue
     }
 
@@ -318,6 +339,7 @@ const toReferencePreviewHtml = (text?: string) => {
   return blocks.join('')
 }
 
+// API base URL을 계산하는 함수
 const getBaseUrl = () => {
   const envBase = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || ''
   if (envBase) return envBase.replace(/\/+$/, '')
@@ -325,6 +347,7 @@ const getBaseUrl = () => {
   return ''
 }
 
+// 상대 경로를 절대 URL로 변환하는 함수
 const toAbsoluteUrl = (raw: string) => {
   const value = String(raw || '').trim()
   if (!value) return ''
@@ -344,6 +367,7 @@ const toAbsoluteUrl = (raw: string) => {
   return base ? `${base}/${normalized.replace(/^\.?\//, '')}` : normalized
 }
 
+// reference_image 응답 데이터를 화면용 타입으로 정규화하는 함수
 const normalizeReferenceImages = (raw: unknown): ReferenceImageType[] => {
   if (!Array.isArray(raw)) return []
 
@@ -400,6 +424,7 @@ const normalizeReferenceImages = (raw: unknown): ReferenceImageType[] => {
     .filter((item) => item.url || item.title)
 }
 
+// 메시지 배열을 안전한 표준 메시지 타입으로 정규화하는 함수
 const normalizeMessages = (messages: any[]): ChatMessageType[] =>
   messages.map((message, index) => ({
     id: message?.id ?? `msg_${Date.now()}_${index}`,
@@ -410,6 +435,7 @@ const normalizeMessages = (messages: any[]): ChatMessageType[] =>
     reference: Array.isArray(message?.reference) ? message.reference : [],
   }))
 
+// sessionStorage에서 채팅 이력을 가져오는 함수
 const getStoredMessages = (sessionId: string): ChatMessageType[] => {
   if (typeof window === 'undefined') return []
   const raw = sessionStorage.getItem(`${CHAT_HISTORY_KEY_PREFIX}${sessionId}`)
@@ -421,17 +447,20 @@ const getStoredMessages = (sessionId: string): ChatMessageType[] => {
   }
 }
 
+// sessionStorage에 채팅 이력을 저장하는 함수
 const setStoredMessages = (sessionId: string, messages: ChatMessageType[]) => {
   if (typeof window === 'undefined') return
   sessionStorage.setItem(`${CHAT_HISTORY_KEY_PREFIX}${sessionId}`, JSON.stringify(messages))
 }
 
+// 직접 백엔드 호출 URL을 반환하는 함수
 const getApiUrl = () => {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL
   if (!baseUrl) throw new Error('API URL not configured')
   return `${baseUrl}/python-api/rag/generate`
 }
 
+// 스트리밍 문자열 버퍼에서 JSON 객체들을 분리 파싱하는 함수
 const parseStreamingJSON = (
   buffer: string,
 ): { objects: Record<string, unknown>[]; remaining: string } => {
@@ -496,6 +525,7 @@ const parseStreamingJSON = (
   return { objects, remaining }
 }
 
+// direct API 우선 호출 후 실패 시 /api/chat로 폴백하는 함수
 const smartFetch = async (body: Record<string, unknown>) => {
   const options: RequestInit = {
     method: 'POST',
@@ -528,6 +558,7 @@ const smartFetch = async (body: Record<string, unknown>) => {
   }
 }
 
+// 채팅 메시지를 전송하고 스트리밍 응답을 반영해 이력을 저장하는 함수
 const addChatMessage = async (
   content: string,
   sessionId: string,
@@ -594,8 +625,7 @@ const addChatMessage = async (
             }
 
             const now = Date.now()
-            const shouldUpdate =
-              now - lastUpdateTime > 30 || done || lastAssistant.length % 50 === 0
+            const shouldUpdate = now - lastUpdateTime > 30 || done || lastAssistant.length % 50 === 0
 
             if (onStream && shouldUpdate) {
               onStream(lastAssistant)
@@ -642,68 +672,40 @@ const addChatMessage = async (
   }
 }
 
+// 메시지 목록에서 최신 참고문헌 포함 bot 메시지를 반환하는 함수
 const getLatestReferenceMessage = (messages: ChatMessageType[]) =>
   [...messages].reverse().find((message) => message.speaker === 'bot' && (message.reference_image?.length ?? 0) > 0) ?? null
 
 export default function ChatbotPage() {
-  const [sessionId] = useState(() => getOrCreateSessionId())
-  const [messages, setMessages] = useState<ChatMessageType[]>([])
-  const [chatInput, setChatInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  /******************** 변수 영역 ********************/
+  const [sessionId] = useState(() => getOrCreateSessionId()) // 현재 채팅 세션 ID
+  const [messages, setMessages] = useState<ChatMessageType[]>([]) // 채팅 메시지 배열
+  const [chatInput, setChatInput] = useState('') // 입력창 문자열
+  const [isLoading, setIsLoading] = useState(false) // 전송/응답 로딩 상태
+  const [error, setError] = useState<string | null>(null) // 에러 메시지
 
-  const [activeReferenceMessageId, setActiveReferenceMessageId] = useState<string | null>(null)
-  const [isReferencePanelOpen, setIsReferencePanelOpen] = useState(false)
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [zoomLevel, setZoomLevel] = useState(1)
-  const [isReferenceImageError, setIsReferenceImageError] = useState(false)
+  const [activeReferenceMessageId, setActiveReferenceMessageId] = useState<string | null>(null) // 활성 참고문헌 메시지 ID
+  const [isReferencePanelOpen, setIsReferencePanelOpen] = useState(false) // 참고문헌 패널 열림 여부
+  const [currentImageIndex, setCurrentImageIndex] = useState(0) // 참고문헌 이미지 인덱스
+  const [zoomLevel, setZoomLevel] = useState(1) // 참고문헌 이미지 확대 비율
+  const [isReferenceImageError, setIsReferenceImageError] = useState(false) // 참고문헌 이미지 로드 실패 여부
 
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null) // 메시지 목록 맨 아래 스크롤용 ref
 
-  useEffect(() => {
-    setMessages(getStoredMessages(sessionId))
-  }, [sessionId])
-
-  const lastMessageContent = messages.length > 0 ? messages[messages.length - 1].message : ''
-
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' })
-    }
-  }, [messages.length, lastMessageContent])
-
-  const latestReferenceMessage = useMemo(() => getLatestReferenceMessage(messages), [messages])
-
-  useEffect(() => {
-    if (!activeReferenceMessageId && latestReferenceMessage) {
-      setActiveReferenceMessageId(latestReferenceMessage.id)
-    }
-  }, [activeReferenceMessageId, latestReferenceMessage])
+  const lastMessageContent = messages.length > 0 ? messages[messages.length - 1].message : '' // 마지막 메시지 내용(스크롤 트리거)
+  const latestReferenceMessage = useMemo(() => getLatestReferenceMessage(messages), [messages]) // 최신 참고문헌 메시지
 
   const activeReferenceMessage = useMemo(() => {
+    // 현재 선택된 참고문헌 메시지 계산
     if (!activeReferenceMessageId) return latestReferenceMessage
     return messages.find((message) => message.id === activeReferenceMessageId) ?? latestReferenceMessage
   }, [activeReferenceMessageId, latestReferenceMessage, messages])
 
-  const activeReferences = activeReferenceMessage?.reference_image ?? []
-  const currentReference = activeReferences[currentImageIndex]
+  const activeReferences = activeReferenceMessage?.reference_image ?? [] // 활성 참고문헌 이미지 목록
+  const currentReference = activeReferences[currentImageIndex] // 현재 표시 중인 참고문헌 이미지
 
-  useEffect(() => {
-    if (!activeReferences.length) {
-      setCurrentImageIndex(0)
-      setZoomLevel(1)
-      setIsReferenceImageError(false)
-      return
-    }
-    if (currentImageIndex >= activeReferences.length) {
-      setCurrentImageIndex(0)
-    }
-  }, [activeReferences.length, currentImageIndex])
-
-  useEffect(() => {
-    setIsReferenceImageError(false)
-  }, [activeReferenceMessage?.id, currentImageIndex, currentReference?.url])
-
+  /******************** 함수 영역 ********************/
+  // 참고문헌 패널을 선택한 메시지 기준으로 오픈하는 함수
   const handleReferenceOpen = useCallback((message: ChatMessageType) => {
     if (!message.reference_image || message.reference_image.length === 0) return
     setActiveReferenceMessageId(message.id)
@@ -713,10 +715,12 @@ export default function ChatbotPage() {
     setIsReferencePanelOpen(true)
   }, [])
 
+  // 참고문헌 패널을 닫는 함수
   const handleReferenceClose = () => {
     setIsReferencePanelOpen(false)
   }
 
+  // 채팅 메시지 전송(optimistic UI + 스트리밍 반영) 함수
   const handleSendMessage = useCallback(async () => {
     const trimmed = chatInput.trim()
     if (!trimmed || isLoading) return
@@ -746,9 +750,7 @@ export default function ChatbotPage() {
 
     const response = await addChatMessage(trimmed, sessionId, (partial) => {
       setMessages((prev) =>
-        prev.map((message) =>
-          message.id === tempBotId ? { ...message, message: partial } : message,
-        ),
+        prev.map((message) => (message.id === tempBotId ? { ...message, message: partial } : message)),
       )
     })
 
@@ -758,15 +760,14 @@ export default function ChatbotPage() {
       const latest = getLatestReferenceMessage(normalized)
       if (latest && !activeReferenceMessageId) setActiveReferenceMessageId(latest.id)
     } else {
-      setMessages((prev) =>
-        prev.filter((message) => message.id !== tempUserId && message.id !== tempBotId),
-      )
+      setMessages((prev) => prev.filter((message) => message.id !== tempUserId && message.id !== tempBotId))
       setError(response.message ?? '메시지 전송 중 오류가 발생했습니다.')
     }
 
     setIsLoading(false)
   }, [chatInput, isLoading, sessionId, activeReferenceMessageId])
 
+  // Enter 키 입력 시 메시지를 전송하는 함수
   const handleEnterSend = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
@@ -774,18 +775,59 @@ export default function ChatbotPage() {
     }
   }
 
+  // 참고문헌 이미지 이전 페이지로 이동하는 함수
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => Math.max(0, prev - 1))
   }
 
+  // 참고문헌 이미지 다음 페이지로 이동하는 함수
   const handleNextImage = () => {
-    setCurrentImageIndex((prev) =>
-      Math.min(activeReferences.length - 1, prev + 1),
-    )
+    setCurrentImageIndex((prev) => Math.min(activeReferences.length - 1, prev + 1))
   }
 
+  // 참고문헌 이미지 축소 함수
   const handleZoomOut = () => setZoomLevel((prev) => Math.max(1, prev / 1.2))
+
+  // 참고문헌 이미지 확대 함수
   const handleZoomIn = () => setZoomLevel((prev) => Math.min(5, prev * 1.2))
+
+  /******************** 수행 영역 ********************/
+  useEffect(() => {
+    // 최초 렌더 시 세션에 저장된 메시지 복원
+    setMessages(getStoredMessages(sessionId))
+  }, [sessionId])
+
+  useEffect(() => {
+    // 메시지 수/내용 변화 시 메시지 목록 최하단으로 자동 스크롤
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    }
+  }, [messages.length, lastMessageContent])
+
+  useEffect(() => {
+    // 참고문헌 메시지가 존재하고 활성 메시지가 없으면 최신 참고문헌 메시지로 지정
+    if (!activeReferenceMessageId && latestReferenceMessage) {
+      setActiveReferenceMessageId(latestReferenceMessage.id)
+    }
+  }, [activeReferenceMessageId, latestReferenceMessage])
+
+  useEffect(() => {
+    // 참고문헌 목록 길이에 맞게 인덱스/줌/에러 상태 보정
+    if (!activeReferences.length) {
+      setCurrentImageIndex(0)
+      setZoomLevel(1)
+      setIsReferenceImageError(false)
+      return
+    }
+    if (currentImageIndex >= activeReferences.length) {
+      setCurrentImageIndex(0)
+    }
+  }, [activeReferences.length, currentImageIndex])
+
+  useEffect(() => {
+    // 메시지/이미지 전환 시 이미지 에러 상태 초기화
+    setIsReferenceImageError(false)
+  }, [activeReferenceMessage?.id, currentImageIndex, currentReference?.url])
 
   return (
     <div className={cbc.chatbot_root}>
@@ -794,11 +836,7 @@ export default function ChatbotPage() {
         <p>케이와이 통합 AI 챗봇 입니다. 무엇이든 물어보세요.</p>
       </header>
 
-      <section
-        className={`${cbc.chatbot_frame} ${
-          isReferencePanelOpen ? cbc.chatbot_frameWithRef : ''
-        }`}
-      >
+      <section className={`${cbc.chatbot_frame} ${isReferencePanelOpen ? cbc.chatbot_frameWithRef : ''}`}>
         <article className={cbc.chat_panel}>
           <div className={cbc.chat_head}>
             <h2>AI Chat</h2>
@@ -970,10 +1008,7 @@ export default function ChatbotPage() {
                   type="button"
                   className={cbc.ref_navBtn}
                   onClick={handleNextImage}
-                  disabled={
-                    !activeReferences.length ||
-                    currentImageIndex >= activeReferences.length - 1
-                  }
+                  disabled={!activeReferences.length || currentImageIndex >= activeReferences.length - 1}
                   aria-label="다음 문서"
                 >
                   &gt;
@@ -1000,16 +1035,12 @@ export default function ChatbotPage() {
                     />
                   ) : (
                     <div className={cbc.ref_empty}>
-                      <div className={cbc.ref_emptyTitle}>
-                        참고문헌 이미지를 불러오지 못했습니다.
-                      </div>
+                      <div className={cbc.ref_emptyTitle}>참고문헌 이미지를 불러오지 못했습니다.</div>
                       <div className={cbc.ref_emptyMeta}>
-                        {(currentReference.title || currentReference.name || '제목 없음')}
+                        {currentReference.title || currentReference.name || '제목 없음'}
                         {currentReference.page ? ` / page:${currentReference.page}` : ''}
                       </div>
-                      <code className={cbc.ref_emptyUrl}>
-                        {currentReference.url || 'url 없음'}
-                      </code>
+                      <code className={cbc.ref_emptyUrl}>{currentReference.url || 'url 없음'}</code>
                     </div>
                   )
                 ) : (
