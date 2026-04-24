@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import dmc from './DetailMonitoring.module.css'
 import imag from '@/app/components/style/resources/css/image.module.css'
 import CommonDetailMonitoringTimeSeriesChart, {
@@ -69,6 +69,23 @@ type GetDevicesResponseType = {
   message?: string
 }
 
+type AdminCustomerOptionType = {
+  id: string
+  name: string
+}
+
+type GetCustomersResponseType = {
+  success: boolean
+  data: AdminCustomerOptionType[]
+  message?: string
+}
+
+type SessionUserInfoType = {
+  customerId: string
+  role: string
+  isAdmin: boolean
+}
+
 type DashboardRowType = {
   CURVOLTAGE?: number
   PRESSURE?: number
@@ -132,20 +149,6 @@ const formatNumber = (value: number, digits: number) =>
     maximumFractionDigits: digits,
   })
 
-// 피크 입력값 표시 포맷(천단위 + 소수 1자리)
-const formatPeakInput = (value: number) =>
-  value.toLocaleString('ko-KR', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 1,
-  })
-
-// 피크 입력값 파싱(콤마/문자 제거)
-const parsePeakInput = (raw: string) => {
-  const sanitized = raw.replace(/,/g, '').replace(/[^\d.]/g, '')
-  const next = Number(sanitized)
-  return Number.isFinite(next) ? next : 0
-}
-
 // 카드별 표시 포맷 함수
 const formatMetricValue = (metric: MetricCardType) => {
   if (metric.key === 'instantPower') return formatNumber(metric.value, 2) // 순시전력량은 소수점 2자리
@@ -171,18 +174,39 @@ const formatTimeLabel = (iso: string) => {
   return `${hh}:${mm}`
 }
 
-// localStorage의 세션 정보에서 customer_id 추출
-const getCustomerIdFromSession = () => {
-  if (typeof window === 'undefined') return '' // SSR 방지
+// localStorage 세션 정보에서 customer_id/role 추출
+const getSessionUserInfo = (): SessionUserInfoType => {
+  if (typeof window === 'undefined') {
+    return { customerId: '', role: '', isAdmin: false }
+  }
 
-  const raw = localStorage.getItem('session.userInfo') // 세션 원문
-  if (!raw) return ''
+  const raw = localStorage.getItem('session.userInfo')
+  if (!raw) {
+    return { customerId: '', role: '', isAdmin: false }
+  }
 
   try {
-    const parsed = JSON.parse(raw) as { customer_id?: string; customerId?: string } // 세션 파싱
-    return String(parsed.customer_id ?? parsed.customerId ?? '').trim()
+    const parsed = JSON.parse(raw) as {
+      customer_id?: string
+      customerId?: string
+      role?: string
+      customer_auth?: string
+      auth?: string
+    }
+
+    const customerId = String(parsed.customer_id ?? parsed.customerId ?? '').trim()
+    const roleRaw = String(parsed.role ?? parsed.customer_auth ?? parsed.auth ?? '')
+      .trim()
+      .toLowerCase()
+
+    const isAdmin =
+      roleRaw === 'admin' ||
+      roleRaw.includes('admin') ||
+      roleRaw.includes('관리')
+
+    return { customerId, role: roleRaw, isAdmin }
   } catch {
-    return ''
+    return { customerId: '', role: '', isAdmin: false }
   }
 }
 
@@ -361,6 +385,46 @@ export default function DetailMonitoringPage() {
 
   const [peakThresholdByDevice, setPeakThresholdByDevice] = useState<Record<string, number>>({}) // 장비별 피크 설정값
 
+  const [sessionCustomerId, setSessionCustomerId] = useState('') // 세션 customer_id
+  const [sessionRole, setSessionRole] = useState('') // 세션 role
+
+  const [customerOptions, setCustomerOptions] = useState<AdminCustomerOptionType[]>([]) // 관리자용 고객사 옵션
+  const [selectedCustomerId, setSelectedCustomerId] = useState('') // 관리자 선택 고객사
+  const [customerKeyword, setCustomerKeyword] = useState('') // 고객사 검색어
+  const [isCustomerListLoading, setIsCustomerListLoading] = useState(false) // 고객사 목록 로딩 여부
+  const [customerListError, setCustomerListError] = useState<string | null>(null) // 고객사 목록 오류 메시지
+
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false) // 고객사 드롭다운 열림 여부
+  const customerComboRef = useRef<HTMLDivElement | null>(null) // 고객사 콤보박스 ref  
+
+  const isAdminUser = useMemo(() => {
+    const role = sessionRole.trim().toLowerCase()
+    return role === 'admin' || role.includes('admin') || role.includes('관리')
+  }, [sessionRole])
+
+  const resolvedCustomerId = isAdminUser ? selectedCustomerId : sessionCustomerId // 장비 조회 대상 customer_id
+
+  const shouldHideShell =
+    isAdminUser &&
+    !String(selectedCustomerId ?? '').trim() &&
+    !isCustomerListLoading &&
+    !customerListError
+    
+  const filteredCustomerOptions = useMemo(() => {
+    const keyword = customerKeyword.trim().toLowerCase()
+    const filtered = keyword
+      ? customerOptions.filter((item) => item.name.toLowerCase().includes(keyword))
+      : customerOptions
+
+    if (!selectedCustomerId) return filtered
+    if (filtered.some((item) => item.id === selectedCustomerId)) return filtered
+
+    const selected = customerOptions.find((item) => item.id === selectedCustomerId)
+    return selected ? [selected, ...filtered] : filtered
+  }, [customerKeyword, customerOptions, selectedCustomerId]) // 검색 적용 고객사 목록
+
+  const emptyTabsMessage = '연결된 장비가 없습니다.' // 일반 사용자용 장비 없음 메시지
+
   const selectedTab = useMemo(
     () => tabs.find((tab) => tab.id === selectedCompressorId) ?? tabs[0] ?? null,
     [tabs, selectedCompressorId],
@@ -391,6 +455,35 @@ export default function DetailMonitoringPage() {
   const chartDescription = '시간에 따른 데이터가 나타나며, AI가 30분 뒤의 예측 결과를 제공합니다.' // 차트 설명 문구
 
   /******************** 함수 영역 ********************/
+  // 고객사 검색 입력 변경 핸들러 (입력값 포함 검색 + 정확히 일치하면 선택)
+  const handleCustomerKeywordChange = (value: string) => {
+    setCustomerKeyword(value)
+    setIsCustomerDropdownOpen(true)
+
+    const trimmed = value.trim()
+    const exact = customerOptions.find((item) => item.name === trimmed)
+
+    if (exact) {
+      if (selectedCustomerId !== exact.id) {
+        setSelectedCustomerId(exact.id)
+        setSelectedCompressorId(0)
+      }
+    } else if (selectedCustomerId) {
+      setSelectedCustomerId('')
+      setSelectedCompressorId(0)
+    }
+  }
+
+  // 드롭다운 항목 선택 핸들러
+  const handleCustomerSelect = (item: AdminCustomerOptionType) => {
+    setCustomerKeyword(item.name)
+    if (selectedCustomerId !== item.id) {
+      setSelectedCustomerId(item.id)
+      setSelectedCompressorId(0)
+    }
+    setIsCustomerDropdownOpen(false)
+  }
+
   // 캐러셀에서 이전 탭으로 이동하는 함수
   const handleMovePrevTabs = () => {
     if (!canMovePrevTabs) return
@@ -423,17 +516,87 @@ export default function DetailMonitoringPage() {
   }, [])
 
   useEffect(() => {
-    let disposed = false // 비동기 완료 시점의 언마운트 가드
+    // 세션을 읽고 관리자면 고객사 목록을 조회한다.
+    let disposed = false
 
-    // 로그인 customer_id 기준으로 연결 장비 목록을 조회하는 함수
-    const loadTabs = async () => {
-      setIsTabsLoading(true) // 조회 시작 로딩
-      setTabsError(null) // 이전 오류 초기화
+    const session = getSessionUserInfo()
+    setSessionRole(session.role)
+    setSessionCustomerId(session.customerId)
+
+    if (!session.isAdmin) {
+      setCustomerOptions([])
+      setSelectedCustomerId('')
+      setCustomerKeyword('')
+      setCustomerListError(null)
+      return
+    }
+
+    const loadAdminCustomers = async () => {
+      setIsCustomerListLoading(true)
+      setCustomerListError(null)
 
       try {
-        const customerId = getCustomerIdFromSession() // 세션에서 customer_id 추출
+        const response = await fetch(withAppPrefix('/api/admin/getCustomers'), { method: 'GET' })
+        const json = (await response.json().catch(() => null)) as GetCustomersResponseType | null
+
+        if (!response.ok || !json?.success) {
+          throw new Error(json?.message ?? '고객사 목록을 불러오지 못했습니다.')
+        }
+
+        const options = (Array.isArray(json.data) ? json.data : [])
+          .map((item) => ({
+            id: String(item.id ?? '').trim(),
+            name: String(item.name ?? '-').trim() || '-',
+          }))
+          .filter((item) => Boolean(item.id))
+          .sort((a, b) => a.name.localeCompare(b.name, 'ko'))
+
+        if (!disposed) {
+          setCustomerOptions(options)
+          setSelectedCustomerId((prev) => {
+            if (prev && options.some((v) => v.id === prev)) return prev
+            return '' // 관리자 최초 진입 시 고객사 자동 선택 안함
+          })
+        }
+      } catch (error: any) {
+        if (!disposed) {
+          setCustomerOptions([])
+          setSelectedCustomerId('')
+          setCustomerListError(error?.message ?? '고객사 목록 조회 중 오류가 발생했습니다.')
+        }
+      } finally {
+        if (!disposed) {
+          setIsCustomerListLoading(false)
+        }
+      }
+    }
+
+    void loadAdminCustomers()
+
+    return () => {
+      disposed = true
+    }
+  }, [])
+
+  useEffect(() => {
+    // 선택된 customer_id 기준으로 연결 장비 목록을 조회한다.
+    let disposed = false
+
+    const loadTabs = async () => {
+      setIsTabsLoading(true)
+      setTabsError(null)
+
+      try {
+        const customerId = String(resolvedCustomerId ?? '').trim()
+
+        // 관리자 미선택/세션 없음 케이스는 오류 없이 장비 비움 처리
         if (!customerId) {
-          throw new Error('로그인 정보에서 customer_id를 확인할 수 없습니다.')
+          if (!disposed) {
+            setTabs([])
+            setSelectedCompressorId(0)
+            setTabStartIndex(0)
+          }
+          return
         }
 
         const response = await fetch(
@@ -441,45 +604,46 @@ export default function DetailMonitoringPage() {
           { method: 'GET' },
         )
 
-        const json = (await response.json().catch(() => null)) as GetDevicesResponseType | null // 응답 파싱
+        const json = (await response.json().catch(() => null)) as GetDevicesResponseType | null
 
         if (!response.ok || !json?.success) {
           throw new Error(json?.message ?? '연결된 장비를 불러오지 못했습니다.')
         }
 
-        const list = Array.isArray(json.data) ? json.data : [] // 장비 배열 보정
+        const list = Array.isArray(json.data) ? json.data : []
         const nextTabs = list.map((device, idx) => ({
           id: idx + 1,
           deviceId: device.deviceId,
           name: device.deviceName,
-        })) // 화면용 탭 모델 변환
+        }))
 
         if (!disposed) {
-          setTabs(nextTabs) // 탭 목록 반영
+          setTabs(nextTabs)
           setSelectedCompressorId((prev) => {
-            if (nextTabs.some((t) => t.id === prev)) return prev // 기존 선택 유지 가능 시 유지
-            return nextTabs[0]?.id ?? 0 // 아니면 첫 탭 선택
+            if (nextTabs.some((t) => t.id === prev)) return prev
+            return nextTabs[0]?.id ?? 0
           })
-          setTabStartIndex(0) // 캐러셀 시작점 초기화
+          setTabStartIndex(0)
         }
       } catch (error: any) {
         if (!disposed) {
           setTabs([])
           setSelectedCompressorId(0)
-          setTabsError(error?.message ?? '장비 목록 조회 중 오류가 발생했습니다.') // 오류 노출
+          setTabsError(error?.message ?? '장비 목록 조회 중 오류가 발생했습니다.')
         }
       } finally {
         if (!disposed) {
-          setIsTabsLoading(false) // 조회 종료
+          setIsTabsLoading(false)
         }
       }
     }
 
-    loadTabs() // 최초 장비 탭 조회 실행
+    void loadTabs()
+
     return () => {
-      disposed = true // 언마운트 시 가드 활성화
+      disposed = true
     }
-  }, [])
+  }, [resolvedCustomerId, isAdminUser])
 
   useEffect(() => {
     if (!selectedTab) return // 선택 장비가 없으면 중단
@@ -579,13 +743,109 @@ export default function DetailMonitoringPage() {
     }
   }, [selectedCompressorId, shouldUseTabCarousel, tabStartIndex, tabs])
 
+  useEffect(() => {
+    // 관리자 고객사 콤보박스 외부 클릭 시 드롭다운 닫기
+    if (!isAdminUser) return
+
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (!customerComboRef.current) return
+      if (!customerComboRef.current.contains(event.target as Node)) {
+        setIsCustomerDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [isAdminUser])
+
+  useEffect(() => {
+    // 선택된 고객사가 있으면 input 텍스트를 고객사명으로 동기화
+    if (!isAdminUser) return
+    const selected = customerOptions.find((item) => item.id === selectedCustomerId)
+    if (selected) {
+      setCustomerKeyword(selected.name)
+    }
+  }, [isAdminUser, customerOptions, selectedCustomerId])
+
   return (
     <div className={dmc.detail_root}>
       <header className={dmc.detail_pageHead}>
-        <h1>컴프레서 상태 모니터링</h1>
-        <p>실시간 컴프레서 운전 상태 및 30분에 대한 예측 결과를 확인하실 수 있습니다.</p>
+        <div className={dmc.detail_pageHeadTop}>
+          <div className={dmc.detail_pageHeadText}>
+            <h1>컴프레서 상태 모니터링</h1>
+            <p>실시간 컴프레서 운전 상태 및 30분에 대한 예측 결과를 확인하실 수 있습니다.</p>
+          </div>
+
+          {isAdminUser && (
+            <div className={dmc.detail_customerSelectBox}>
+              <strong className={dmc.detail_customerSelectTitle}>고객사 선택</strong>
+
+            <div className={dmc.detail_customerSelectControls}>
+              <div className={dmc.detail_customerCombo} ref={customerComboRef}>
+                <input
+                  type="text"
+                  className={dmc.detail_customerSearchInput}
+                  placeholder="고객사 검색 후 선택"
+                  value={customerKeyword}
+                  onFocus={() => setIsCustomerDropdownOpen(true)}
+                  onChange={(e) => handleCustomerKeywordChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setIsCustomerDropdownOpen(false)
+                    }
+
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      const first = filteredCustomerOptions[0]
+                      if (first) handleCustomerSelect(first)
+                    }
+                  }}
+                  disabled={isCustomerListLoading}
+                />
+
+                <button
+                  type="button"
+                  className={dmc.detail_customerComboArrow}
+                  onClick={() => setIsCustomerDropdownOpen((prev) => !prev)}
+                  disabled={isCustomerListLoading}
+                  aria-label="고객사 목록 열기"
+                >
+                  ▾
+                </button>
+
+                {isCustomerDropdownOpen && (
+                  <div className={dmc.detail_customerDropdown}>
+                    {filteredCustomerOptions.length ? (
+                      filteredCustomerOptions.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className={`${dmc.detail_customerDropdownItem} ${
+                            item.id === selectedCustomerId ? dmc.detail_customerDropdownItemActive : ''
+                          }`}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => handleCustomerSelect(item)}
+                        >
+                          {item.name}
+                        </button>
+                      ))
+                    ) : (
+                      <div className={dmc.detail_customerDropdownEmpty}>검색 결과가 없습니다.</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            </div>
+          )}
+        </div>
+
+        {isAdminUser && customerListError ? (
+          <p className={dmc.detail_customerSelectError}>{customerListError}</p>
+        ) : null}
       </header>
 
+      {!shouldHideShell && (
       <section className={dmc.detail_shell}>
         <div
           className={`${dmc.detail_tabsCarousel} ${
@@ -629,11 +889,13 @@ export default function DetailMonitoringPage() {
                   )
                 })}
 
-              {!isTabsLoading && !visibleTabs.length && (
-                <button type="button" className={dmc.detail_tabBtn} disabled>
-                  <span>연결된 장비가 없습니다.</span>
-                </button>
-              )}
+                {!isTabsLoading && !visibleTabs.length && (
+                  isAdminUser ? null : (
+                    <button type="button" className={dmc.detail_tabBtn} disabled>
+                      <span>{emptyTabsMessage}</span>
+                    </button>
+                  )
+                )}
             </div>
           </div>
 
@@ -700,14 +962,14 @@ export default function DetailMonitoringPage() {
               <div className={`${dmc.detail_kpiCard} ${dmc.detail_peakSettingCard}`}>
                 <h3>순시 전력량 피크값 설정</h3>
                 <input
-                  type="text"
-                  inputMode="decimal"
+                  type="number"
                   className={dmc.detail_peakInput}
-                  value={formatPeakInput(selectedPeakThreshold)}
+                  value={selectedPeakThreshold}
+                  step={0.1}
                   onChange={(event) => {
                     if (!selectedTab) return
-                    const next = parsePeakInput(event.target.value)
-                    const value = Number.isNaN(next) ? 0 : Math.max(0, round(next, 1))
+                    const next = Number(event.target.value) // 사용자 입력값
+                    const value = Number.isNaN(next) ? 0 : Math.max(0, round(next, 1)) // 안전 보정값
                     setPeakThresholdByDevice((prev) => ({
                       ...prev,
                       [selectedTab.deviceId]: value,
@@ -829,6 +1091,7 @@ export default function DetailMonitoringPage() {
           </div>
         )}
       </section>
+      )}
     </div>
   )
 }

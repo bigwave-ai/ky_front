@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import mmc from './PeakShaving.module.css'
 import imag from '@/app/components/style/resources/css/image.module.css'
 import CommonDonutEquipment, {
@@ -18,6 +18,7 @@ import { withAppPrefix } from '@/config/environment'
  * 03. 설명     : MILP 피크 분배 시뮬레이션 입력/실행/결과 UI
  *                - Python API 연동
  *                - 장비명 DB 조회 연동
+ *                - 관리자 고객사 검색/선택 지원
  * 04. 작성일자  : 2026.04.08
  * 05. 작성자   : 이우창
  */
@@ -57,6 +58,23 @@ type PeakRecommendationType = {
   distributionLines: string[]
   base15Kw: number
   base30Kw: number
+}
+
+type AdminCustomerOptionType = {
+  id: string
+  name: string
+}
+
+type GetCustomersResponseType = {
+  success: boolean
+  data: AdminCustomerOptionType[]
+  message?: string
+}
+
+type SessionUserInfoType = {
+  customerId: string
+  role: string
+  isAdmin: boolean
 }
 
 /******************** 변수 영역 ********************/
@@ -103,19 +121,56 @@ const normalizePeakDispatchResponse = (raw: any): PeakDispatchResponseType => {
   }
 }
 
-// 세션(localStorage)에서 customer_id를 읽어오는 함수
-const getCustomerIdFromSession = () => {
-  if (typeof window === 'undefined') return '' // 클라이언트 환경 체크
+// 세션(localStorage)에서 customer_id + role 정보를 읽어오는 함수
+const getSessionUserInfo = (): SessionUserInfoType => {
+  if (typeof window === 'undefined') {
+    return { customerId: '', role: '', isAdmin: false }
+  }
 
-  const raw = localStorage.getItem('session.userInfo') // 세션 원문
-  if (!raw) return ''
+  const raw = localStorage.getItem('session.userInfo')
+  if (!raw) {
+    return { customerId: '', role: '', isAdmin: false }
+  }
 
   try {
-    const parsed = JSON.parse(raw) as { customer_id?: string; customerId?: string } // 파싱 결과
-    return String(parsed.customer_id ?? parsed.customerId ?? '').trim()
+    const parsed = JSON.parse(raw) as {
+      customer_id?: string
+      customerId?: string
+      role?: string
+      customer_auth?: string
+      auth?: string
+    }
+
+    const customerId = String(parsed.customer_id ?? parsed.customerId ?? '').trim()
+    const roleRaw = String(parsed.role ?? parsed.customer_auth ?? parsed.auth ?? '').trim().toLowerCase()
+
+    const isAdmin =
+      roleRaw === 'admin' ||
+      roleRaw.includes('admin') ||
+      roleRaw.includes('관리')
+
+    return { customerId, role: roleRaw, isAdmin }
   } catch {
-    return ''
+    return { customerId: '', role: '', isAdmin: false }
   }
+}
+
+// 관리자 고객사 목록 조회 함수
+const fetchAdminCustomers = async (): Promise<AdminCustomerOptionType[]> => {
+  const response = await fetch(withAppPrefix('/api/admin/getCustomers'), { method: 'GET' })
+  const json = (await response.json().catch(() => null)) as GetCustomersResponseType | null
+
+  if (!response.ok || !json?.success) {
+    throw new Error(json?.message ?? '고객사 목록 조회에 실패했습니다.')
+  }
+
+  return (Array.isArray(json.data) ? json.data : [])
+    .map((item) => ({
+      id: String(item.id ?? '').trim(),
+      name: String(item.name ?? '-').trim() || '-',
+    }))
+    .filter((item) => Boolean(item.id))
+    .sort((a, b) => a.name.localeCompare(b.name, 'ko'))
 }
 
 export default function PeakShavingPage() {
@@ -131,6 +186,41 @@ export default function PeakShavingPage() {
   const [warnOpen, setWarnOpen] = useState(false) // 경고 모달 오픈 여부
   const [warnTitle, setWarnTitle] = useState('') // 경고 모달 제목
   const [warnDetail, setWarnDetail] = useState('') // 경고 모달 상세 메시지
+
+  const [sessionCustomerId, setSessionCustomerId] = useState('') // 세션 customer_id
+  const [sessionRole, setSessionRole] = useState('') // 세션 role
+
+  const [customerOptions, setCustomerOptions] = useState<AdminCustomerOptionType[]>([]) // 관리자 고객사 목록
+  const [selectedCustomerId, setSelectedCustomerId] = useState('') // 관리자 선택 고객사 ID
+  const [customerKeyword, setCustomerKeyword] = useState('') // 고객사 검색어
+  const [isCustomerListLoading, setIsCustomerListLoading] = useState(false) // 고객사 목록 로딩 여부
+  const [customerListError, setCustomerListError] = useState<string | null>(null) // 고객사 목록 오류 메시지
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false) // 고객사 드롭다운 오픈 여부
+
+  const customerComboRef = useRef<HTMLDivElement | null>(null) // 고객사 콤보 박스 ref
+
+  const isAdminUser = useMemo(() => {
+    const role = sessionRole.trim().toLowerCase()
+    return role === 'admin' || role.includes('admin') || role.includes('관리')
+  }, [sessionRole]) // 관리자 여부 판별
+
+  const resolvedCustomerId = isAdminUser ? selectedCustomerId : sessionCustomerId // API 요청에 사용할 customer_id
+
+  const shouldHidePeakContent =
+    isAdminUser && !String(selectedCustomerId ?? '').trim() // 관리자 + 고객사 미선택 시 본문 숨김
+
+  const filteredCustomerOptions = useMemo(() => {
+    const keyword = customerKeyword.trim().toLowerCase()
+    const filtered = keyword
+      ? customerOptions.filter((item) => item.name.toLowerCase().includes(keyword))
+      : customerOptions
+
+    if (!selectedCustomerId) return filtered
+    if (filtered.some((item) => item.id === selectedCustomerId)) return filtered
+
+    const selected = customerOptions.find((item) => item.id === selectedCustomerId)
+    return selected ? [selected, ...filtered] : filtered
+  }, [customerKeyword, customerOptions, selectedCustomerId]) // 검색 적용 고객사 목록
 
   const analysisEquipmentCount = milpResult?.device_count ?? 0 // 분석 장비 수
   const idleEquipmentCount = milpResult?.idle_device_ids.length ?? 0 // 미가동 장비 수
@@ -218,13 +308,39 @@ export default function PeakShavingPage() {
     }
   }
 
+  // 고객사 검색 input 변경 핸들러
+  const handleCustomerKeywordChange = (value: string) => {
+    setCustomerKeyword(value)
+    setIsCustomerDropdownOpen(true)
+
+    const trimmed = value.trim()
+    const exact = customerOptions.find((item) => item.name === trimmed)
+
+    if (exact) {
+      if (selectedCustomerId !== exact.id) {
+        setSelectedCustomerId(exact.id)
+      }
+    } else if (selectedCustomerId) {
+      setSelectedCustomerId('')
+    }
+  }
+
+  // 고객사 항목 선택 핸들러
+  const handleCustomerSelect = (item: AdminCustomerOptionType) => {
+    setCustomerKeyword(item.name)
+    if (selectedCustomerId !== item.id) {
+      setSelectedCustomerId(item.id)
+    }
+    setIsCustomerDropdownOpen(false)
+  }
+
   // MILP 실행 버튼 클릭 시 Python API 호출 및 결과를 반영하는 함수
   const handleRunMilp = async () => {
     if (isRunning) return
 
-    const customerId = getCustomerIdFromSession() // 세션 customer_id
+    const customerId = String(resolvedCustomerId ?? '').trim() // 관리자/일반 사용자 공통 customer_id
     if (!customerId) {
-      openWarn('세션 정보 오류', '로그인 사용자 customer_id를 찾을 수 없습니다. 다시 로그인해주세요.')
+      openWarn('고객사 선택 필요', '고객사를 먼저 선택한 뒤 실행해주세요.')
       return
     }
 
@@ -251,7 +367,6 @@ export default function PeakShavingPage() {
 
       const responseJson = await response.json().catch(() => null) // 응답 파싱(실패 허용)
 
-      // 400 에러는 사용자 요구 문구로 고정 처리
       if (!response.ok) {
         if (response.status === 400) {
           throw new Error('연결된 장비를 찾을 수 없습니다.')
@@ -298,186 +413,336 @@ export default function PeakShavingPage() {
   const formatRate = (value: number) => `(${toNumber(value, 0).toFixed(2)}%)`
 
   /******************** 수행 영역 ********************/
-  // 본 컴포넌트는 useEffect를 사용하지 않고, 사용자 액션 기반으로 API를 수행합니다.
+  useEffect(() => {
+    let disposed = false
+
+    const session = getSessionUserInfo()
+    setSessionRole(session.role)
+    setSessionCustomerId(session.customerId)
+
+    if (!session.isAdmin) {
+      setCustomerOptions([])
+      setSelectedCustomerId('')
+      setCustomerKeyword('')
+      setCustomerListError(null)
+      return
+    }
+
+    const loadCustomers = async () => {
+      setIsCustomerListLoading(true)
+      setCustomerListError(null)
+
+      try {
+        const options = await fetchAdminCustomers()
+        if (!disposed) {
+          setCustomerOptions(options)
+          setSelectedCustomerId((prev) => {
+            if (prev && options.some((v) => v.id === prev)) return prev
+            return ''
+          })
+        }
+      } catch (error: any) {
+        if (!disposed) {
+          setCustomerOptions([])
+          setSelectedCustomerId('')
+          setCustomerListError(error?.message ?? '고객사 목록 조회 중 오류가 발생했습니다.')
+        }
+      } finally {
+        if (!disposed) {
+          setIsCustomerListLoading(false)
+        }
+      }
+    }
+
+    void loadCustomers()
+
+    return () => {
+      disposed = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isAdminUser) return
+    const selected = customerOptions.find((item) => item.id === selectedCustomerId)
+    if (selected) {
+      setCustomerKeyword(selected.name)
+    }
+  }, [isAdminUser, customerOptions, selectedCustomerId])
+
+  useEffect(() => {
+    if (!isAdminUser) return
+
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (!customerComboRef.current) return
+      if (!customerComboRef.current.contains(event.target as Node)) {
+        setIsCustomerDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [isAdminUser])
+
+  useEffect(() => {
+    // 고객 변경 시 이전 결과 초기화
+    setShowEquipmentResult(false)
+    setMilpResult(null)
+    setDeviceNameMap({})
+  }, [resolvedCustomerId])
+
   return (
     <div className={mmc.peak_root}>
       <header className={`${mmc.peak_pageHead} ${mmc.peak_stageFadeUp}`}>
-        <h1>MILP 피크 분배 시뮬레이션</h1>
-        <p>MILP 피크 전력 분배 시뮬레이션 결과를 확인할 수 있습니다.</p>
+        <div className={mmc.peak_pageHeadTop}>
+          <div className={mmc.peak_pageHeadText}>
+            <h1>MILP 피크 분배 시뮬레이션</h1>
+            <p>MILP 피크 전력 분배 시뮬레이션 결과를 확인할 수 있습니다.</p>
+          </div>
+
+          {isAdminUser && (
+            <div className={mmc.peak_customerSelectBox}>
+              <strong className={mmc.peak_customerSelectTitle}>고객사 선택</strong>
+
+              <div className={mmc.peak_customerSelectControls}>
+                <div className={mmc.peak_customerCombo} ref={customerComboRef}>
+                  <input
+                    type="text"
+                    className={mmc.peak_customerSearchInput}
+                    placeholder="고객사 검색 후 선택"
+                    value={customerKeyword}
+                    onFocus={() => setIsCustomerDropdownOpen(true)}
+                    onChange={(e) => handleCustomerKeywordChange(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        setIsCustomerDropdownOpen(false)
+                      }
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        const first = filteredCustomerOptions[0]
+                        if (first) handleCustomerSelect(first)
+                      }
+                    }}
+                    disabled={isCustomerListLoading}
+                  />
+
+                  <button
+                    type="button"
+                    className={mmc.peak_customerComboArrow}
+                    onClick={() => setIsCustomerDropdownOpen((prev) => !prev)}
+                    disabled={isCustomerListLoading}
+                    aria-label="고객사 목록 열기"
+                  >
+                    ▾
+                  </button>
+
+                  {isCustomerDropdownOpen && (
+                    <div className={mmc.peak_customerDropdown}>
+                      {filteredCustomerOptions.length ? (
+                        filteredCustomerOptions.map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            className={`${mmc.peak_customerDropdownItem} ${
+                              item.id === selectedCustomerId ? mmc.peak_customerDropdownItemActive : ''
+                            }`}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => handleCustomerSelect(item)}
+                          >
+                            {item.name}
+                          </button>
+                        ))
+                      ) : (
+                        <div className={mmc.peak_customerDropdownEmpty}>검색 결과가 없습니다.</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {isAdminUser && customerListError ? (
+          <p className={mmc.peak_customerSelectError}>{customerListError}</p>
+        ) : null}
       </header>
 
-      <section className={`${mmc.peak_selectCard} ${mmc.peak_stageFadeUp}`}>
-        <div className={mmc.peak_selectTitleWrap}>
-          <h2>장비 선택/입력</h2>
-          <p>MILP 피크 분배 시뮬레이션을 위해 미가동 기준 및 조회시간을 입력해주세요.</p>
-        </div>
-
-        <div className={mmc.peak_selectControls}>
-          <div className={`${mmc.peak_field} ${mmc.peak_field_idle}`}>
-            <div className={mmc.peak_fieldTop}>
-              <span className={mmc.peak_fieldLabel}>미가동 기준</span>
-              <span className={mmc.peak_fieldHint}>OP_STATUS 평균 이하</span>
+      {!shouldHidePeakContent && (
+        <>
+          <section className={`${mmc.peak_selectCard} ${mmc.peak_stageFadeUp}`}>
+            <div className={mmc.peak_selectTitleWrap}>
+              <h2>장비 선택/입력</h2>
+              <p>MILP 피크 분배 시뮬레이션을 위해 미가동 기준 및 조회시간을 입력해주세요.</p>
             </div>
-            <input
-              className={`${mmc.peak_numberInput} ${mmc.peak_numberInputSpin}`}
-              type="number"
-              value={idleThreshold}
-              min={0}
-              max={1}
-              step={0.01}
-              onChange={(e) => {
-                const raw = e.target.value // 입력 문자열
-                if (raw === '') {
-                  setIdleThreshold(0)
-                  return
-                }
 
-                const next = Number(raw) // 숫자 변환값
-                if (Number.isNaN(next)) return
-                setIdleThreshold(normalizeIdleThreshold(next))
-              }}
-              onBlur={() => {
-                setIdleThreshold((prev) => normalizeIdleThreshold(prev))
-              }}
-            />
-          </div>
+            <div className={mmc.peak_selectControls}>
+              <div className={`${mmc.peak_field} ${mmc.peak_field_idle}`}>
+                <div className={mmc.peak_fieldTop}>
+                  <span className={mmc.peak_fieldLabel}>미가동 기준</span>
+                  <span className={mmc.peak_fieldHint}>OP_STATUS 평균 이하</span>
+                </div>
+                <input
+                  className={`${mmc.peak_numberInput} ${mmc.peak_numberInputSpin}`}
+                  type="number"
+                  value={idleThreshold}
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  onChange={(e) => {
+                    const raw = e.target.value // 입력 문자열
+                    if (raw === '') {
+                      setIdleThreshold(0)
+                      return
+                    }
 
-          <div className={`${mmc.peak_field} ${mmc.peak_field_time}`}>
-            <div className={mmc.peak_fieldTop}>
-              <span className={mmc.peak_fieldLabel}>조회 시간</span>
-              <span className={mmc.peak_fieldHint}>시뮬레이션 조회 시간 입력</span>
-            </div>
-            <input
-              className={`${mmc.peak_numberInput} ${mmc.peak_numberInputSpin}`}
-              type="number"
-              value={queryHour}
-              min={1}
-              step={1}
-              onChange={(e) => {
-                const next = Number(e.target.value) // 입력 숫자
-                if (Number.isNaN(next)) {
-                  setQueryHour(1)
-                  return
-                }
-                setQueryHour(Math.max(1, next))
-              }}
-            />
-          </div>
-
-          <button
-            type="button"
-            className={mmc.peak_runBtn}
-            onClick={handleRunMilp}
-            disabled={isRunning}
-          >
-            {isRunning ? 'MILP 실행 중..' : 'MILP 실행'}
-          </button>
-        </div>
-      </section>
-
-      {showEquipmentResult && milpResult && (
-        <section className={mmc.peak_resultWrap}>
-          <div className={mmc.peak_topResultGrid}>
-            <article className={`${mmc.peak_equipmentCard} ${mmc.peak_stageFadeUp}`}>
-              <div className={mmc.peak_cardHead}>
-                <h3>장비 수</h3>
-                <p>MILP 피크에 대한 장비 분석 결과 입니다.</p>
-              </div>
-
-              <div className={mmc.peak_equipmentBody}>
-                <CommonDonutEquipment
-                  legend={equipmentLegend}
-                  totalLabel={`전체 장비 수 (${totalEquipmentCount}대)`}
+                    const next = Number(raw) // 숫자 변환값
+                    if (Number.isNaN(next)) return
+                    setIdleThreshold(normalizeIdleThreshold(next))
+                  }}
+                  onBlur={() => {
+                    setIdleThreshold((prev) => normalizeIdleThreshold(prev))
+                  }}
                 />
               </div>
-            </article>
 
-            <article
-              className={`${mmc.peak_peakReduceCard} ${mmc.peak_peakReduceCardBlue} ${mmc.peak_stageFadeUp}`}
-            >
-              <div className={mmc.peak_peakReduceIconWrap} aria-hidden="true">
-                <div className={`${imag.elctric_circle_icon} ${mmc.peak_electricIcon}`} />
+              <div className={`${mmc.peak_field} ${mmc.peak_field_time}`}>
+                <div className={mmc.peak_fieldTop}>
+                  <span className={mmc.peak_fieldLabel}>조회 시간</span>
+                  <span className={mmc.peak_fieldHint}>시뮬레이션 조회 시간 입력</span>
+                </div>
+                <input
+                  className={`${mmc.peak_numberInput} ${mmc.peak_numberInputSpin}`}
+                  type="number"
+                  value={queryHour}
+                  min={1}
+                  step={1}
+                  onChange={(e) => {
+                    const next = Number(e.target.value) // 입력 숫자
+                    if (Number.isNaN(next)) {
+                      setQueryHour(1)
+                      return
+                    }
+                    setQueryHour(Math.max(1, next))
+                  }}
+                />
               </div>
 
-              <h4 className={mmc.peak_peakReduceTitle}>15분 피크 절감</h4>
-
-              <div className={mmc.peak_peakReduceValueWrap}>
-                <strong className={mmc.peak_peakReduceValue}>{formatKw(peakCut15Kw)}</strong>
-                <span className={mmc.peak_peakReduceRate}>{formatRate(peakCut15Rate)}</span>
-              </div>
-            </article>
-
-            <article
-              className={`${mmc.peak_peakReduceCard} ${mmc.peak_peakReduceCardWhite} ${mmc.peak_stageFadeUp}`}
-            >
-              <div className={mmc.peak_peakReduceIconWrap} aria-hidden="true">
-                <div className={`${imag.elctric_circle_icon} ${mmc.peak_electricIcon}`} />
-              </div>
-
-              <h4 className={mmc.peak_peakReduceTitle}>30분 피크 절감</h4>
-
-              <div className={mmc.peak_peakReduceValueWrap}>
-                <strong className={mmc.peak_peakReduceValue}>{formatKw(peakCut30Kw)}</strong>
-                <span className={mmc.peak_peakReduceRate}>{formatRate(peakCut30Rate)}</span>
-              </div>
-            </article>
-          </div>
-
-          <article className={`${mmc.peak_recommendCard} ${mmc.peak_stageFadeUp}`}>
-            <div className={mmc.peak_cardHead}>
-              <h3>장비 분배 추천</h3>
-              <p>피크 절감을 위한 장비 분배 추천 결과입니다.</p>
+              <button
+                type="button"
+                className={mmc.peak_runBtn}
+                onClick={handleRunMilp}
+                disabled={isRunning || (isAdminUser && !selectedCustomerId)}
+              >
+                {isRunning ? 'MILP 실행 중..' : 'MILP 실행'}
+              </button>
             </div>
+          </section>
 
-            <div className={mmc.peak_recommendRows}>
-              {recommendations.length ? (
-                recommendations.map((item) => (
-                  <div key={item.deviceId} className={mmc.peak_recommendRow}>
-                    <div className={mmc.peak_recommendInfoWrap}>
-                      <div className={mmc.peak_recommendInfoRow}>
-                        <div className={mmc.peak_recommendBadge}>장비 정보</div>
-                        <strong className={mmc.peak_recommendEquipment}>{item.equipmentName}</strong>
-                      </div>
+          {showEquipmentResult && milpResult && (
+            <section className={mmc.peak_resultWrap}>
+              <div className={mmc.peak_topResultGrid}>
+                <article className={`${mmc.peak_equipmentCard} ${mmc.peak_stageFadeUp}`}>
+                  <div className={mmc.peak_cardHead}>
+                    <h3>장비 수</h3>
+                    <p>MILP 피크에 대한 장비 분석 결과 입니다.</p>
+                  </div>
 
-                      <div className={mmc.peak_recommendInfoRow}>
-                        <div className={mmc.peak_recommendBadgeLarge}>추천 분배</div>
-                        <div className={mmc.peak_recommendTextGroup}>
-                          {item.distributionLines.map((line, idx) => (
-                            <p key={`${item.deviceId}-${idx}`} className={mmc.peak_recommendText}>
-                              {line}
-                            </p>
-                          ))}
+                  <div className={mmc.peak_equipmentBody}>
+                    <CommonDonutEquipment
+                      legend={equipmentLegend}
+                      totalLabel={`전체 장비 수 (${totalEquipmentCount}대)`}
+                    />
+                  </div>
+                </article>
+
+                <article
+                  className={`${mmc.peak_peakReduceCard} ${mmc.peak_peakReduceCardBlue} ${mmc.peak_stageFadeUp}`}
+                >
+                  <div className={mmc.peak_peakReduceIconWrap} aria-hidden="true">
+                    <div className={`${imag.elctric_circle_icon} ${mmc.peak_electricIcon}`} />
+                  </div>
+
+                  <h4 className={mmc.peak_peakReduceTitle}>15분 피크 절감</h4>
+
+                  <div className={mmc.peak_peakReduceValueWrap}>
+                    <strong className={mmc.peak_peakReduceValue}>{formatKw(peakCut15Kw)}</strong>
+                    <span className={mmc.peak_peakReduceRate}>{formatRate(peakCut15Rate)}</span>
+                  </div>
+                </article>
+
+                <article
+                  className={`${mmc.peak_peakReduceCard} ${mmc.peak_peakReduceCardWhite} ${mmc.peak_stageFadeUp}`}
+                >
+                  <div className={mmc.peak_peakReduceIconWrap} aria-hidden="true">
+                    <div className={`${imag.elctric_circle_icon} ${mmc.peak_electricIcon}`} />
+                  </div>
+
+                  <h4 className={mmc.peak_peakReduceTitle}>30분 피크 절감</h4>
+
+                  <div className={mmc.peak_peakReduceValueWrap}>
+                    <strong className={mmc.peak_peakReduceValue}>{formatKw(peakCut30Kw)}</strong>
+                    <span className={mmc.peak_peakReduceRate}>{formatRate(peakCut30Rate)}</span>
+                  </div>
+                </article>
+              </div>
+
+              <article className={`${mmc.peak_recommendCard} ${mmc.peak_stageFadeUp}`}>
+                <div className={mmc.peak_cardHead}>
+                  <h3>장비 분배 추천</h3>
+                  <p>피크 절감을 위한 장비 분배 추천 결과입니다.</p>
+                </div>
+
+                <div className={mmc.peak_recommendRows}>
+                  {recommendations.length ? (
+                    recommendations.map((item) => (
+                      <div key={item.deviceId} className={mmc.peak_recommendRow}>
+                        <div className={mmc.peak_recommendInfoWrap}>
+                          <div className={mmc.peak_recommendInfoRow}>
+                            <div className={mmc.peak_recommendBadge}>장비 정보</div>
+                            <strong className={mmc.peak_recommendEquipment}>{item.equipmentName}</strong>
+                          </div>
+
+                          <div className={mmc.peak_recommendInfoRow}>
+                            <div className={mmc.peak_recommendBadgeLarge}>추천 분배</div>
+                            <div className={mmc.peak_recommendTextGroup}>
+                              {item.distributionLines.map((line, idx) => (
+                                <p key={`${item.deviceId}-${idx}`} className={mmc.peak_recommendText}>
+                                  {line}
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className={mmc.peak_recommendRightGroup}>
+                          <div className={mmc.peak_recommendPredictBox}>장비 가동 예측</div>
+
+                          <CommonPeakPredictBars
+                            bars={[
+                              { label: '15분 기준값', value: item.base15Kw },
+                              { label: '30분 기준값', value: item.base30Kw },
+                            ]}
+                            unit="kW"
+                            maxValue={maxPredictValue}
+                            gapPx={80}
+                            sidePaddingPx={40}
+                            valueOffsetPx={8}
+                          />
                         </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className={mmc.peak_recommendRow}>
+                      <div className={mmc.peak_recommendTextGroup}>
+                        <p className={mmc.peak_recommendText}>추천할 장비 데이터가 없습니다.</p>
+                      </div>
                     </div>
-
-                    <div className={mmc.peak_recommendRightGroup}>
-                      <div className={mmc.peak_recommendPredictBox}>장비 가동 예측</div>
-
-                      <CommonPeakPredictBars
-                        bars={[
-                          { label: '15분 기준값', value: item.base15Kw },
-                          { label: '30분 기준값', value: item.base30Kw },
-                        ]}
-                        unit="kW"
-                        maxValue={maxPredictValue}
-                        gapPx={80}
-                        sidePaddingPx={40}
-                        valueOffsetPx={8}
-                      />
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className={mmc.peak_recommendRow}>
-                  <div className={mmc.peak_recommendTextGroup}>
-                    <p className={mmc.peak_recommendText}>추천할 장비 데이터가 없습니다.</p>
-                  </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </article>
-        </section>
+              </article>
+            </section>
+          )}
+        </>
       )}
 
       <LoadingModal

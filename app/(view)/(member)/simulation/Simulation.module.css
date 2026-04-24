@@ -22,6 +22,10 @@
   align-content: start;
   gap: 6px;
   min-height: 0;
+
+  position: relative;
+  z-index: 40;
+  overflow: visible;  
 }
 
 .simulation_pageHead h1 {
@@ -43,6 +47,171 @@
   letter-spacing: -0.6px;
   line-height: 1.35;
 }
+
+.simulation_pageHeadTop {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  position: relative;
+  z-index: 41;
+  overflow: visible;  
+}
+
+.simulation_pageHeadText {
+  display: grid;
+  gap: 6px;
+}
+
+.simulation_customerSelectBox {
+  margin-left: auto;
+  min-width: 320px;
+  max-width: 460px;
+  border: 1px solid #d2e6fb;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 10px rgba(36, 72, 130, 0.08);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+
+  position: relative;
+  z-index: 60;
+  overflow: visible;  
+}
+
+.simulation_customerSelectTitle {
+  color: #2f4f7f;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+
+.simulation_customerSelectControls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  position: relative;
+  z-index: 61;  
+}
+
+.simulation_customerSearchInput {
+  width: 100%;
+  height: 34px;
+  border: 1px solid #c5ddf4;
+  border-radius: 8px;
+  background: #fff;
+  color: #2b2b2b;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+.simulation_customerSearchInput:focus {
+  outline: none;
+  border-color: #71afe0;
+  box-shadow: 0 0 0 2px rgba(72, 147, 209, 0.14);
+}
+
+.simulation_customerSelectError {
+  margin: 2px 0 0;
+  color: #d14343;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  line-height: 1.3;
+}
+
+/* 관리자 고객사 콤보박스 */
+.simulation_customerCombo {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 0px;
+  align-items: center;
+  gap: 0;
+  position: relative;
+  z-index: 62;  
+}
+
+.simulation_customerCombo .simulation_customerSearchInput {
+  width: 100%;
+  padding-right: 36px;
+}
+
+.simulation_customerComboArrow {
+  width: 34px;
+  height: 34px;
+  margin-left: -34px;
+  border: 0;
+  background: transparent;
+  color: #4f6b88;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.simulation_customerComboArrow:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.simulation_customerDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid #c5ddf4;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(30, 62, 104, 0.16);
+  z-index: 1000;
+  padding: 4px;
+  z-index: 9999;
+}
+
+.simulation_customerDropdownItem {
+  width: 100%;
+  min-height: 34px;
+  border: 0;
+  border-radius: 6px;
+  background: #fff;
+  color: #2b2b2b;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+.simulation_customerDropdownItem:hover {
+  background: #f3f9ff;
+}
+
+.simulation_customerDropdownItemActive {
+  background: #e9f4ff;
+  color: #1f5ea8;
+}
+
+.simulation_customerDropdownEmpty {
+  min-height: 34px;
+  border-radius: 6px;
+  color: #7b8fa6;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+}
+
 
 /* 상단 선택 카드 */
 .simulation_selectCard {
@@ -115,8 +284,8 @@
 }
 
 .simulation_field_equipment {
-  width: 360px;
-  min-width: 360px;
+  width: 400px;
+  min-width: 400px;
 }
 
 .simulation_field_time {
@@ -175,8 +344,8 @@
 }
 
 .simulation_select_equipment {
-  width: 140px;
-  min-width: 140px;
+  width: 180px;
+  min-width: 180px;
   margin-left: auto;
 }
 
@@ -749,6 +918,17 @@
   .simulation_resultLayout {
     grid-template-columns: 1fr;
   }
+  .simulation_pageHeadTop {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .simulation_customerSelectBox {
+    margin-left: 0;
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+  }  
 }
 
 @media (max-width: 1024px) {
@@ -829,6 +1009,9 @@
   .simulation_runBtn {
     width: 100%;
   }
+  .simulation_customerSelectControls {
+    grid-template-columns: 1fr;
+  }  
 }
 
 @media (max-width: 560px) {

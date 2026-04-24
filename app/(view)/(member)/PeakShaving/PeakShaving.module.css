@@ -327,6 +327,181 @@
   line-height: 1;
 }
 
+.peak_pageHead {
+  position: relative;
+  z-index: 40;
+  overflow: visible;
+}
+
+.peak_pageHeadTop {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  position: relative;
+  z-index: 41;
+  overflow: visible;
+}
+
+.peak_pageHeadText {
+  display: grid;
+  gap: 6px;
+}
+
+.peak_customerSelectBox {
+  margin-left: auto;
+  min-width: 320px;
+  max-width: 460px;
+  border: 1px solid #d2e6fb;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 10px rgba(36, 72, 130, 0.08);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  position: relative;
+  z-index: 60;
+  overflow: visible;
+}
+
+.peak_customerSelectTitle {
+  color: #2f4f7f;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+
+.peak_customerSelectControls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  position: relative;
+  z-index: 61;
+}
+
+.peak_customerSearchInput {
+  width: 100%;
+  height: 34px;
+  border: 1px solid #c5ddf4;
+  border-radius: 8px;
+  background: #fff;
+  color: #2b2b2b;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+.peak_customerSearchInput:focus {
+  outline: none;
+  border-color: #71afe0;
+  box-shadow: 0 0 0 2px rgba(72, 147, 209, 0.14);
+}
+
+.peak_customerSelectError {
+  margin: 2px 0 0;
+  color: #d14343;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  line-height: 1.3;
+}
+
+.peak_customerCombo {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 0;
+  z-index: 62;
+}
+
+.peak_customerCombo .peak_customerSearchInput {
+  width: 100%;
+  padding-right: 36px;
+}
+
+.peak_customerComboArrow {
+  width: 34px;
+  height: 34px;
+  margin-left: -34px;
+  border: 0;
+  background: transparent;
+  color: #4f6b88;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.peak_customerComboArrow:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.peak_customerDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid #c5ddf4;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(30, 62, 104, 0.16);
+  z-index: 9999;
+  padding: 4px;
+}
+
+.peak_customerDropdownItem {
+  width: 100%;
+  min-height: 34px;
+  border: 0;
+  border-radius: 6px;
+  background: #fff;
+  color: #2b2b2b;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+.peak_customerDropdownItem:hover {
+  background: #f3f9ff;
+}
+
+.peak_customerDropdownItemActive {
+  background: #e9f4ff;
+  color: #1f5ea8;
+}
+
+.peak_customerDropdownEmpty {
+  min-height: 34px;
+  border-radius: 6px;
+  color: #7b8fa6;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+}
+
+/* 드롭다운이 본문 카드에 가려지지 않도록 본문 z-index 낮춤 */
+.peak_selectCard,
+.peak_resultWrap {
+  position: relative;
+  z-index: 1;
+}
+
+
+
 /* 반응형 */
 @media (max-width: 1600px) {
   .peak_field_idle {
@@ -377,6 +552,17 @@
   .peak_peakReduceCard {
     min-height: 210px;
   }
+  .peak_pageHeadTop {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .peak_customerSelectBox {
+    margin-left: 0;
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+  }  
 }
 
 @media (max-width: 1024px) {
@@ -469,6 +655,10 @@
   .peak_peakReduceRate {
     font-size: 20px;
   }
+  .peak_customerSelectControls {
+    grid-template-columns: 1fr;
+  }
+
 }
 
 @media (max-width: 560px) {
@@ -706,3 +896,5 @@
     min-height: 64px;
   }
 }
+
+
