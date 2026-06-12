@@ -1,0 +1,152 @@
+.text_data_icon{
+  width: 14px;
+  height: 14px;        /* ✅ height 추가 필요 */  
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-image: url("../imgs/text_data_icon.png");  
+}
+
+.video_data_icon{
+  width: 14px;
+  height: 14px;        /* ✅ height 추가 필요 */  
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-image: url("../imgs/video_data_icon.png");  
+}
+
+.structured_data_icon{
+  width: 14px;
+  height: 14px;        /* ✅ height 추가 필요 */  
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-image: url("../imgs/structured_data_icon.png");  
+}
+
+.logo_dip{
+  width:379px;
+  height:50px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-image: url("../imgs/logo_dip.png");    
+}
+
+.company_logo{
+  width:54px;
+  height:20px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-image: url("../imgs/company_logo.png");    
+}
+
+.company_logo_white{
+  width:192px;
+  height:38px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-image: url("../imgs/company_logo_white.png");    
+}
+
+.header_user_icon{
+  width:26px;
+  height:26px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("../imgs/header_user_icon.png");     
+}
+
+.logout_icon{
+  width:18px;
+  height:18px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("../imgs/logout_icon.png");  
+}
+
+.elctric_circle_icon{
+  width:100px;
+  height:100px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("../imgs/electric_circle_icon.png");  
+}
+
+.user_circle_icon{
+  width: 68px;
+  height: 68px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("../imgs/user_circle_icon.png");    
+}
+
+.compressor_circle_blue_icon{
+  width: 68px;
+  height: 68px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("../imgs/compressor_circle_blue_icon.png");    
+}
+
+.compressor_circle_green_icon{
+  width: 68px;
+  height: 68px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("../imgs/compressor_circle_green_icon.png");    
+}
+
+.compressor_circle_red_icon{
+  width: 68px;
+  height: 68px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("../imgs/compressor_circle_red_icon.png");    
+}
+
+.search_grey_icon{
+  width: 18px;
+  height: 18px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("../imgs/search_grey_icon.png");    
+}
+
+.ai_assistant_icon{
+  width: 30px;
+  height: 30px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("../imgs/ai_assistant_icon.png");
+}
+
+.send_message_icon{
+  width: 26px;
+  height: 26px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("../imgs/send_message.png");    
+}
+
+.compressor_circle_blue_small_icon{
+  width: 24px;
+  height: 24px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("../imgs/compressor_circle_blue_small_icon.png");
+}

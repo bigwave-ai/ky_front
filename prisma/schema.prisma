@@ -1,0 +1,217 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DB_URL")
+}
+
+model TB_AI_PEMS_LOG {
+  LOG_ID       BigInt    @id @default(autoincrement())
+  DEVICE_ID    String    @db.Uuid
+  LOG_DT       DateTime? @db.Timestamp(6)
+  PRESSURE     Float?
+  TEMPERATURE  Float?
+  HZ           Float?
+  OP_STATUS    Boolean?
+  AVGVOLTAGE   Float?
+  AVGCURRENT   Float?
+  CURVOLTAGE   Float?
+  FACTOR       Float?
+  OP_TIME      Int?
+  CSUSAGETIME  Int?
+  MGREFILLTIME Int?
+  TB_DEVICE    TB_DEVICE @relation(fields: [DEVICE_ID], references: [DEVICE_ID], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model TB_CUSTOMER {
+  CUSTOMER_ID          String                 @id @db.Uuid
+  CUSTOMER_NAME        String?
+  CUSTOMER_INDUSTRY    String?                @db.VarChar(50)
+  CUSTOMER_PRODUCT     String?                @db.VarChar(50)
+  CUSTOMER_AUTH        String?
+  CUSTOMER_PHONE       String?
+  CUSTOMER_EMAIL       String?
+  CUSTOMER_PASSWORD    String?
+  CUSTOMER_USER_ID     String?
+  TB_DEVICE            TB_DEVICE[]
+  TB_PEAK_DISPATCH_RUN TB_PEAK_DISPATCH_RUN[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model TB_DEVICE {
+  DEVICE_ID                      String                           @id @db.Uuid
+  CUSTOMER_ID                    String?                          @db.Uuid
+  SERIAL_NO                      String?
+  DEVICE_TYPE                    String?                          @db.VarChar(50)
+  DEVICE_NUM                     String?                          @db.VarChar(50)
+  CS_SET_TIME                    DateTime?                        @db.Timestamp(6)
+  MG_REFILL_SET_TIME             DateTime?                        @db.Timestamp(6)
+  HORSE_POWER                    Float?
+  DATA_TYPE                      String?                          @default("0") @db.VarChar(2)
+  DEVICE_NAME                    String?                          @db.VarChar(100)
+  TB_AI_PEMS_LOG                 TB_AI_PEMS_LOG[]
+  TB_CUSTOMER                    TB_CUSTOMER?                     @relation(fields: [CUSTOMER_ID], references: [CUSTOMER_ID], onDelete: NoAction, onUpdate: NoAction)
+  TB_FLOW_LOG                    TB_FLOW_LOG[]
+  TB_PEAK_DISPATCH_DEVICE_RESULT TB_PEAK_DISPATCH_DEVICE_RESULT[]
+  TB_PEMSPROPLUS_LOG             TB_PEMSPROPLUS_LOG[]
+  TB_PEMS_PRO_LOG                TB_PEMS_PRO_LOG[]
+  TB_SIMULATION_LOG              TB_SIMULATION_LOG[]
+  TB_VIBRATION_LOG               TB_VIBRATION_LOG[]
+  TB_WARN_ERROR_LOG              TB_WARN_ERROR_LOG[]
+}
+
+model TB_FLOW_LOG {
+  LOG_ID      BigInt    @id @default(autoincrement())
+  DEVICE_ID   String    @db.Uuid
+  LOG_DT      DateTime? @db.Timestamp(6)
+  PRESSURE    Float?
+  TEMPERATURE Float?
+  CUR_FLOW    Float?
+  TB_DEVICE   TB_DEVICE @relation(fields: [DEVICE_ID], references: [DEVICE_ID], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model TB_PEAK_DISPATCH_DEVICE_RESULT {
+  RESULT_ID              BigInt               @id @default(autoincrement())
+  PEAK_RUN_ID            BigInt
+  DEVICE_ID              String               @db.Uuid
+  IS_DONOR               Boolean
+  IS_IDLE                Boolean
+  OP_STATUS_MEAN         Decimal              @db.Decimal(8, 5)
+  THRESHOLD              Decimal              @db.Decimal(12, 3)
+  BASELINE_15            Decimal              @db.Decimal(12, 3)
+  BASELINE_30            Decimal              @db.Decimal(12, 3)
+  OPTIMIZED_15           Decimal              @db.Decimal(12, 3)
+  OPTIMIZED_30           Decimal              @db.Decimal(12, 3)
+  DELTA_15               Decimal              @db.Decimal(12, 3)
+  DELTA_30               Decimal              @db.Decimal(12, 3)
+  SHIFT_IN_15            Decimal              @db.Decimal(12, 3)
+  SHIFT_IN_30            Decimal              @db.Decimal(12, 3)
+  SHIFT_OUT_15           Decimal              @db.Decimal(12, 3)
+  SHIFT_OUT_30           Decimal              @db.Decimal(12, 3)
+  REQUIRED_SHIFT_15      Decimal              @db.Decimal(12, 3)
+  REQUIRED_SHIFT_30      Decimal              @db.Decimal(12, 3)
+  SLACK_15               Decimal              @db.Decimal(12, 3)
+  SLACK_30               Decimal              @db.Decimal(12, 3)
+  DISTRIBUTED_TARGETS_15 Json?
+  DISTRIBUTED_TARGETS_30 Json?
+  DISTRIBUTION_TEXT      String?
+  CREATED_AT             DateTime             @db.Timestamp(6)
+  TB_DEVICE              TB_DEVICE            @relation(fields: [DEVICE_ID], references: [DEVICE_ID], onDelete: NoAction, onUpdate: NoAction)
+  TB_PEAK_DISPATCH_RUN   TB_PEAK_DISPATCH_RUN @relation(fields: [PEAK_RUN_ID], references: [PEAK_RUN_ID], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model TB_PEAK_DISPATCH_RUN {
+  PEAK_RUN_ID                    BigInt                           @id @default(autoincrement())
+  CUSTOMER_ID                    String?                          @db.Uuid
+  STATUS                         String
+  SUCCESS                        Boolean
+  MESSAGE                        String?
+  LOOKBACK_HOURS                 Int
+  TOP_K                          Int
+  IDLE_OP_STATUS_THRESHOLD       Decimal                          @db.Decimal(6, 4)
+  FORCE_EXCEED_DEMO              Boolean
+  FORCE_EXCEED_MARGIN_RATIO      Decimal                          @db.Decimal(6, 4)
+  DEVICE_COUNT                   Int
+  PEAK_15_BEFORE                 Decimal                          @db.Decimal(12, 3)
+  PEAK_15_AFTER                  Decimal                          @db.Decimal(12, 3)
+  PEAK_30_BEFORE                 Decimal                          @db.Decimal(12, 3)
+  PEAK_30_AFTER                  Decimal                          @db.Decimal(12, 3)
+  OBJECTIVE_PEAK_SUM             Decimal                          @db.Decimal(14, 3)
+  TOTAL_SLACK                    Decimal                          @db.Decimal(14, 3)
+  DONOR_DEVICE_IDS               Json?
+  IDLE_DEVICE_IDS                Json?
+  ALLOCATION_PLAN                Json?
+  CREATED_AT                     DateTime                         @db.Timestamp(6)
+  TB_PEAK_DISPATCH_DEVICE_RESULT TB_PEAK_DISPATCH_DEVICE_RESULT[]
+  TB_CUSTOMER                    TB_CUSTOMER?                     @relation(fields: [CUSTOMER_ID], references: [CUSTOMER_ID], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model TB_PEMSPROPLUS_LOG {
+  LOG_ID         BigInt    @id @default(autoincrement())
+  DEVICE_ID      String    @db.Uuid
+  LOG_DT         DateTime? @db.Timestamp(6)
+  PRESSURE       Float?
+  COMP_TEMP      Float?
+  HZ             Int?
+  VSD_FSD        Boolean?
+  OP_STATUS      Boolean?
+  AVG_VOLTAGE    Float?
+  AVG_CURRENT    Float?
+  CUR_VOLTAGE    Float?
+  FACTOR         Float?
+  TEMPERATURE    Float?
+  HUMIDITY       Float?
+  OP_TIME        Int?
+  CS_USAGE_TIME  Int?
+  MG_REFILL_TIME Int?
+  TB_DEVICE      TB_DEVICE @relation(fields: [DEVICE_ID], references: [DEVICE_ID], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model TB_PEMS_PRO_LOG {
+  LOG_ID       BigInt    @id @default(autoincrement())
+  DEVICE_ID    String    @db.Uuid
+  LOG_DT       DateTime? @db.Timestamp(6)
+  PRESSURE     Float?
+  TEMPERATURE  Float?
+  HZ           Float?
+  OP_STATUS    Boolean?
+  AVGVOLTAGE   Float?
+  AVGCURRENT   Float?
+  CURVOLTAGE   Float?
+  FACTOR       Float?
+  OP_TIME      Int?
+  CSUSAGETIME  Int?
+  MGREFILLTIME Int?
+  TB_DEVICE    TB_DEVICE @relation(fields: [DEVICE_ID], references: [DEVICE_ID], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model TB_SIMULATION_LOG {
+  LOG_ID             BigInt    @id @default(autoincrement())
+  DEVICE_ID          String    @db.Uuid
+  BASELINE_PD_TIME   DateTime  @db.Timestamp(6)
+  SEARCH_TIME        Int
+  USE_MODEL          String    @db.VarChar(50)
+  AVAILABLE_FEATURE  Int
+  CHANGE_FEATURE     Int?
+  RESULT_VALUE       Json?
+  CHANGE_COLUMN_INFO Json?
+  FEATURE_IMPORTANCE Json?
+  TB_DEVICE          TB_DEVICE @relation(fields: [DEVICE_ID], references: [DEVICE_ID], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model TB_VIBRATION_LOG {
+  LOG_ID      BigInt    @id @default(autoincrement())
+  DEVICE_ID   String    @db.Uuid
+  FREQUENCY_1 Int?
+  MAGNITUDE_1 Float?
+  FREQUENCY_2 Int?
+  MAGNITUDE_2 Float?
+  FREQUENCY_3 Int?
+  MAGNITUDE_3 Float?
+  TB_DEVICE   TB_DEVICE @relation(fields: [DEVICE_ID], references: [DEVICE_ID], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model TB_WARN_ERROR_LOG {
+  ID         BigInt    @id @default(autoincrement())
+  DEVICE_ID  String    @db.Uuid
+  ERROR_WARN Boolean?
+  CODE       String?
+  EW_NOTE    String?
+  EW_DT      DateTime? @db.Timestamp(6)
+  TB_DEVICE  TB_DEVICE @relation(fields: [DEVICE_ID], references: [DEVICE_ID], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model TB_DATA_TYPE {
+  DATA_TYPE String @id @db.VarChar(2)
+  NAME      String @db.VarChar(50)
+}
+
+model TB_DEVICE_TYPE {
+  DEVICE_TYPE String @id @db.VarChar(2)
+  NAME        String @db.VarChar(50)
+}

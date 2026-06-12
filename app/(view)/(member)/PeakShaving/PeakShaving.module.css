@@ -1,0 +1,900 @@
+/* ==========================================================================
+   13) Peak Shaving Page
+   ========================================================================== */
+.peak_root {
+  width: 100%;
+  min-height: calc(100vh - 72px);
+  min-width: 0;
+  padding: 16px 24px 20px 20px;
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  align-items: start;
+  grid-auto-rows: max-content;
+  background:
+    linear-gradient(90deg, rgba(240, 236, 255, 0.62) 0%, rgba(232, 242, 255, 0.62) 100%),
+    url("../../../components/style/resources/imgs/system_background.png") center / cover no-repeat;
+}
+
+.peak_pageHead {
+  width: 100%;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-height: 0;
+}
+
+.peak_pageHead h1 {
+  margin: 0;
+  color: #243ea9;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -1.3px;
+  line-height: 1.15;
+}
+
+.peak_pageHead p {
+  margin: 10px 0 0;
+  color: #4d4d4d;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  line-height: 1.35;
+}
+
+/* 상단 선택 카드 */
+.peak_selectCard {
+  align-self: start;
+  min-width: 0;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 14px rgba(20, 45, 73, 0.08);
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.peak_selectTitleWrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.peak_selectTitleWrap h2 {
+  margin: 0;
+  color: #2b2b2b;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  white-space: nowrap;
+}
+
+.peak_selectTitleWrap p {
+  margin: 0;
+  color: #5c6f87;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  line-height: 1.3;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.peak_selectControls {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+  width: auto;
+}
+
+.peak_field {
+  min-width: 0;
+  border-radius: 999px;
+  background: #eff7ff;
+  padding: 8px 16px;
+  box-sizing: border-box;
+}
+
+.peak_field_idle,
+.peak_field_time {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.peak_field_idle {
+  width: 340px;
+  min-width: 340px;
+}
+
+.peak_field_time {
+  width: 300px;
+  min-width: 300px;
+}
+
+.peak_field_idle .peak_fieldTop,
+.peak_field_time .peak_fieldTop {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.peak_fieldLabel {
+  color: #2b2b2b;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  white-space: nowrap;
+}
+
+.peak_fieldHint {
+  color: #5c6f87;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.peak_numberInput {
+  height: 38px;
+  width: 96px;
+  max-width: 96px;
+  margin-left: auto;
+  border: 1px solid #c9d8e6;
+  border-radius: 10px;
+  background: #fff;
+  color: #2b2b2b;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+
+.peak_numberInput:focus {
+  outline: none;
+  border-color: #79a9d0;
+  box-shadow: 0 0 0 2px rgba(46, 133, 196, 0.15);
+}
+
+.peak_numberInputSpin {
+  appearance: auto;
+  -webkit-appearance: auto;
+  -moz-appearance: auto;
+}
+
+.peak_numberInputSpin::-webkit-outer-spin-button,
+.peak_numberInputSpin::-webkit-inner-spin-button {
+  -webkit-appearance: auto;
+  margin: 0;
+  opacity: 1;
+}
+
+.peak_runBtn {
+  height: 42px;
+  min-width: 118px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #2a93ca 0%, #1a78b0 100%);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  cursor: pointer;
+}
+
+/* 결과 상단 3카드 */
+.peak_resultWrap {
+  width: 100%;
+  display: grid;
+  align-content: start;
+}
+
+.peak_topResultGrid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(420px, 1.35fr) minmax(280px, 1fr) minmax(280px, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.peak_equipmentCard {
+  width: 100%;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 14px rgba(20, 45, 73, 0.08);
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+}
+
+.peak_cardHead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #8f98a6;
+}
+
+.peak_cardHead h3 {
+  margin: 0;
+  color: #2b2b2b;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -1.2px;
+  white-space: nowrap;
+}
+
+.peak_cardHead p {
+  margin: 0;
+  color: #5c6f87;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.peak_equipmentBody {
+  min-width: 0;
+}
+
+/* 15분/30분 피크 절감 카드 */
+.peak_peakReduceCard {
+  position: relative;
+  border-radius: 20px;
+  box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+  padding: 26px 24px;
+  min-height: 232px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  align-content: space-between;
+}
+
+.peak_peakReduceCardBlue {
+  border-radius: 20px;
+  background: linear-gradient(115deg, #fff 0%, rgba(47, 181, 239, 0.25) 100%);
+  box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+}
+
+.peak_peakReduceCardWhite {
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+}
+
+.peak_peakReduceIconWrap {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  width: 100px;
+  height: 100px;
+  border-radius: 999px;
+  background: rgba(225, 233, 246, 0.72);
+  display: grid;
+  place-items: center;
+}
+
+.peak_electricIcon {
+  width: 100px !important;
+  height: 100px !important;
+}
+
+.peak_peakReduceTitle {
+  margin: 0;
+  color: #2b2b2b;
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -1.8px;
+  line-height: 2.1;
+}
+
+.peak_peakReduceValueWrap {
+  align-self: end;
+  justify-self: end;
+  text-align: right;
+  display: grid;
+  gap: 4px;
+  padding-bottom: 24px;
+}
+
+.peak_peakReduceValue {
+  color: #224bc0;
+  font-size: 64px;
+  font-weight: 600;
+  letter-spacing: -3px;
+  line-height: 1;
+}
+
+.peak_peakReduceRate {
+  color: #224bc0;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.8px;
+  line-height: 1;
+}
+
+.peak_pageHead {
+  position: relative;
+  z-index: 40;
+  overflow: visible;
+}
+
+.peak_pageHeadTop {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  position: relative;
+  z-index: 41;
+  overflow: visible;
+}
+
+.peak_pageHeadText {
+  display: grid;
+  gap: 6px;
+}
+
+.peak_customerSelectBox {
+  margin-left: auto;
+  min-width: 320px;
+  max-width: 460px;
+  border: 1px solid #d2e6fb;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 10px rgba(36, 72, 130, 0.08);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  position: relative;
+  z-index: 60;
+  overflow: visible;
+}
+
+.peak_customerSelectTitle {
+  color: #2f4f7f;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+
+.peak_customerSelectControls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  position: relative;
+  z-index: 61;
+}
+
+.peak_customerSearchInput {
+  width: 100%;
+  height: 34px;
+  border: 1px solid #c5ddf4;
+  border-radius: 8px;
+  background: #fff;
+  color: #2b2b2b;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+.peak_customerSearchInput:focus {
+  outline: none;
+  border-color: #71afe0;
+  box-shadow: 0 0 0 2px rgba(72, 147, 209, 0.14);
+}
+
+.peak_customerSelectError {
+  margin: 2px 0 0;
+  color: #d14343;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  line-height: 1.3;
+}
+
+.peak_customerCombo {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 0;
+  z-index: 62;
+}
+
+.peak_customerCombo .peak_customerSearchInput {
+  width: 100%;
+  padding-right: 36px;
+}
+
+.peak_customerComboArrow {
+  width: 34px;
+  height: 34px;
+  margin-left: -34px;
+  border: 0;
+  background: transparent;
+  color: #4f6b88;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.peak_customerComboArrow:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.peak_customerDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid #c5ddf4;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(30, 62, 104, 0.16);
+  z-index: 9999;
+  padding: 4px;
+}
+
+.peak_customerDropdownItem {
+  width: 100%;
+  min-height: 34px;
+  border: 0;
+  border-radius: 6px;
+  background: #fff;
+  color: #2b2b2b;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+.peak_customerDropdownItem:hover {
+  background: #f3f9ff;
+}
+
+.peak_customerDropdownItemActive {
+  background: #e9f4ff;
+  color: #1f5ea8;
+}
+
+.peak_customerDropdownEmpty {
+  min-height: 34px;
+  border-radius: 6px;
+  color: #7b8fa6;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+}
+
+/* 드롭다운이 본문 카드에 가려지지 않도록 본문 z-index 낮춤 */
+.peak_selectCard,
+.peak_resultWrap {
+  position: relative;
+  z-index: 1;
+}
+
+
+
+/* 반응형 */
+@media (max-width: 1600px) {
+  .peak_field_idle {
+    width: 320px;
+    min-width: 320px;
+  }
+
+  .peak_field_time {
+    width: 260px;
+    min-width: 260px;
+  }
+
+  .peak_topResultGrid {
+    grid-template-columns: minmax(400px, 1.3fr) minmax(250px, 1fr) minmax(250px, 1fr);
+  }
+}
+
+@media (max-width: 1360px) {
+  .peak_selectCard {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .peak_selectControls {
+    margin-left: 0;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .peak_field {
+    flex: 0 0 auto;
+  }
+
+  .peak_field_idle {
+    width: min(100%, 360px);
+    min-width: 260px;
+  }
+
+  .peak_field_time {
+    width: min(100%, 300px);
+    min-width: 220px;
+  }
+
+  .peak_topResultGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .peak_peakReduceCard {
+    min-height: 210px;
+  }
+  .peak_pageHeadTop {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .peak_customerSelectBox {
+    margin-left: 0;
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+  }  
+}
+
+@media (max-width: 1024px) {
+  .peak_root {
+    padding: 14px 14px 18px;
+  }
+
+  .peak_pageHead h1 {
+    font-size: 30px;
+    letter-spacing: -1px;
+  }
+
+  .peak_pageHead p {
+    font-size: 14px;
+  }
+
+  .peak_selectTitleWrap h2 {
+    font-size: 22px;
+  }
+
+  .peak_selectTitleWrap p {
+    font-size: 14px;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .peak_cardHead {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .peak_cardHead h3 {
+    font-size: 24px;
+  }
+
+  .peak_cardHead p {
+    font-size: 14px;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 760px) {
+  .peak_selectControls {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .peak_field_idle,
+  .peak_field_time {
+    width: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    border-radius: 16px;
+  }
+
+  .peak_field_idle .peak_fieldTop,
+  .peak_field_time .peak_fieldTop {
+    justify-content: flex-start;
+  }
+
+  .peak_numberInput {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin-left: 0;
+  }
+
+  .peak_runBtn {
+    width: 100%;
+  }
+
+  .peak_peakReduceIconWrap {
+    width: 72px;
+    height: 72px;
+  }
+
+  .peak_electricIcon {
+    width: 52px !important;
+    height: 52px !important;
+  }
+
+  .peak_peakReduceValue {
+    font-size: 30px;
+  }
+
+  .peak_peakReduceRate {
+    font-size: 20px;
+  }
+  .peak_customerSelectControls {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+@media (max-width: 560px) {
+  .peak_root {
+    padding: 12px 10px 16px;
+  }
+
+  .peak_pageHead h1 {
+    font-size: 28px;
+  }
+
+  .peak_selectTitleWrap h2 {
+    font-size: 20px;
+  }
+}
+
+/* 폰트 강제 */
+.peak_root,
+.peak_root table,
+.peak_root th,
+.peak_root td,
+.peak_root input,
+.peak_root select,
+.peak_root button,
+.peak_root p,
+.peak_root span,
+.peak_root em,
+.peak_root strong,
+.peak_root h1,
+.peak_root h2,
+.peak_root h3,
+.peak_root h4 {
+  font-family: Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif !important;
+}
+
+/* 등장 애니메이션 */
+@keyframes peakStageFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.peak_stageFadeUp {
+  animation: peakStageFadeUp 0.34s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .peak_stageFadeUp {
+    animation: none;
+  }
+}
+
+/* 장비 분배 추천 */
+.peak_recommendCard {
+  margin-top: 14px;
+  width: 100%;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 14px rgba(20, 45, 73, 0.08);
+  padding: 20px; /* 요청사항: 컨테이너 패딩 20px */
+  display: grid;
+  gap: 12px;
+}
+
+.peak_recommendRows {
+  display: grid;
+  gap: 14px;
+}
+
+/* 1) 한 세트(행) 우측 여백을 크게 줘서 우측 그룹 전체를 왼쪽으로 이동 */
+.peak_recommendRow {
+  border: 1px solid #c5d9ed;
+  border-radius: 10px;
+  background: #fff;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: center;
+}
+
+
+.peak_recommendInfoWrap {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.peak_recommendInfoRow {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+
+.peak_recommendBadge,
+.peak_recommendBadgeLarge {
+  border-radius: 10px;
+  background: #edf5ff;
+  color: #224bc0;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.peak_recommendBadge {
+  min-height: 48px;
+}
+
+.peak_recommendBadgeLarge {
+  min-height: 104px;
+}
+
+.peak_recommendEquipment {
+  color: #4f6880;
+  font-size: 36px;
+  font-size: 32px;
+  font-size: 28px;
+  font-size: 24px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  line-height: 1.2;
+}
+
+.peak_recommendTextGroup {
+  display: grid;
+  gap: 8px;
+}
+
+.peak_recommendText {
+  margin: 0;
+  color: #4f6880;
+  font-size: 20px;
+  font-size: 18px;
+  font-size: 16px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1.9;
+}
+
+.peak_recommendText strong {
+  color: #4f6880;
+  font-weight: 800;
+}
+
+.peak_recommendHighlight {
+  color: #244fe0;
+  font-weight: 800;
+}
+
+/* 2) 우측 그룹 */
+.peak_recommendRightGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 26px;        /* 예측박스와 차트 사이 간격 */
+  margin-right: 0;  /* 불필요한 우측 마진 제거 */
+}
+
+.peak_recommendPredictBox {
+  width: 130px;
+  min-width: 130px;
+  min-height: 180px;
+  border-radius: 10px;
+  background: #edf5ff;
+  color: #224bc0;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  line-height: 1.35;
+}
+
+/* 추천 카드 반응형 */
+@media (max-width: 1280px) {
+  .peak_recommendRow {
+    grid-template-columns: 1fr;
+    padding: 12px 16px;    
+  }
+
+  .peak_recommendRightGroup {
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 980px) {
+  .peak_recommendInfoRow {
+    grid-template-columns: 120px minmax(0, 1fr);
+  }
+
+  .peak_recommendRightGroup {
+    padding-left: 134px;
+    gap: 18px;
+  }
+}
+
+@media (max-width: 760px) {
+  .peak_recommendRow {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .peak_recommendInfoRow {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .peak_recommendBadge,
+  .peak_recommendBadgeLarge {
+    min-height: 44px;
+  }
+
+  .peak_recommendRightGroup {
+    padding-left: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .peak_recommendPredictBox {
+    width: 100%;
+    min-width: 0;
+    min-height: 64px;
+  }
+}
+
+

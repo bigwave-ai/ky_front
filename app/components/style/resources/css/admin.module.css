@@ -1,0 +1,141 @@
+/* 가변 폰트 */
+@font-face {
+  font-family: 'Pretendard';
+  src: url('/fonts/PretendardVariable.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-style: normal;
+}
+
+/* ===== Member ===== */
+.total{
+  display: flex;
+  width:100vw;
+  height:100vh;
+  background: #f8f8f8;
+}
+
+.total_content{
+    width:100%;
+
+}
+/* ===== Header ===== */
+
+.header {
+  height: 72px;
+  /* border-bottom: 1px solid #DEE1EB; */
+  background: #FBFBFB;
+  box-shadow: 0 10px 20px 0 rgba(18, 38, 63, 0.03);
+  display: flex;
+  align-items: center;        /* 세로 중앙정렬 */
+  justify-content: flex-end;  /* 오른쪽 끝 정렬 */
+  padding-right:30px;
+
+  position: sticky; /* ✅ sticky */ 
+  top: 0; /* 화면 상단에 고정 */ 
+  z-index: 100; /* 본문 위로 올라오도록 */  
+}
+
+
+/* ===== LSB ===== */
+.lsb {
+  min-width: 220px;                 /* 사이드바 너비 */
+  border-right: 1px solid #E9EDF5;
+  background: #2A3042;
+
+  position: fixed;   /* ✅ sticky */
+  top: 0;             /* 화면 상단에 고정 */
+  height: 100vh;      /* 스크롤 내려도 항상 전체 높이 유지 */
+  z-index: 101;
+}
+
+.lsb_inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px 12px;
+  margin-top:64px;
+}
+
+.lsb_logo {
+  height: 64px;                 /* 로고 영역 높이 */
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  margin-bottom: 8px;
+}
+
+.lsb_section_title {
+  padding: 8px 8px;
+  color: #6A7187;
+  font-family: 'Pretendard';
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 150%;
+}
+
+.lsb_nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 메뉴 아이템(버튼) 기본 */
+.lsb_item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  width: 100%;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  color: #fff;
+  font-family: 'Pretendard';
+  font-size: 16px;
+  font-weight: 400;
+  text-align: left;
+  /* line-height: 150%; */
+  letter-spacing: -0.65px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.02s ease;
+}
+
+.lsb_item:hover {
+  background: #4A5574;
+}
+
+.lsb_item:active {
+  transform: translateY(0.5px);
+}
+
+/* 활성 상태 (보라색 pill) */
+.lsb_item_active {
+  background: #4A5574;          /* 연보라 하이라이트 */
+  color: #fff;               /* 텍스트 보라 */
+  /* box-shadow: inset 0 0 0 1px rgba(139, 123, 255, 0.22); */
+}
+
+/* 아이콘/라벨 */
+.lsb_item_icon {
+  width: 20px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+.lsb_item_label {
+  flex: 1;
+}
+
+/* ===== 컨텐츠 래퍼 ===== */
+.contents_container{
+  display:flex;
+  justify-content: center;
+  min-width:880px;
+  margin-left:220px;
+  background:#F8F8FB;
+
+}
+
+
+/* ===== 컨텐츠 래퍼 ===== */

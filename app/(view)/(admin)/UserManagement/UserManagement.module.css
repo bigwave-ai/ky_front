@@ -1,0 +1,587 @@
+/* ==========================================================================
+   14) User Management Page
+   ========================================================================== */
+.user_root {
+  width: 100%;
+  min-height: calc(100vh - 72px);
+  min-width: 0;
+  padding: 16px 24px 20px 20px;
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  align-items: start;
+  grid-auto-rows: max-content;
+  background:
+    linear-gradient(90deg, rgba(240, 236, 255, 0.62) 0%, rgba(232, 242, 255, 0.62) 100%),
+    url("../../../components/style/resources/imgs/system_background.png") center / cover no-repeat;
+}
+
+.user_pageHead {
+  width: 100%;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.user_pageHead h1 {
+  margin: 0;
+  color: #243ea9;
+  font-size: 46px;
+  font-size: 40px;
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -1.4px;
+  line-height: 1.15;
+}
+
+.user_pageHead p {
+  margin: 10px 0 0;
+  color: #2b2b2b;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  line-height: 1.35;
+}
+
+.user_statCard {
+  width: 100%;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4px 14px rgba(20, 45, 73, 0.08);
+  padding: 14px 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.user_cardTitleWrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.user_cardTitleWrap h2 {
+  margin: 0;
+  color: #2b2b2b;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  white-space: nowrap;
+}
+
+.user_cardTitleWrap p {
+  margin: 0;
+  color: #5c6f87;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user_statPills {
+  display: inline-flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.user_statPill {
+  min-width: 160px;
+  border-radius: 999px;
+  background: #eff7ff;
+  padding: 3px 18px;
+  display: inline-flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+
+.user_statPill span {
+  color: #2b2b2b;
+  font-family: Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 48px;
+  letter-spacing: -0.8px;
+  white-space: nowrap;
+}
+
+.user_statPill strong {
+  color: #375aff;
+  text-align: right;
+  font-family: Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 48px;
+  letter-spacing: -0.8px;
+  white-space: nowrap;
+}
+
+.user_grid {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(680px, 1fr) minmax(620px, 0.98fr);
+  gap: 0;
+  align-items: stretch;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid #dce5f2;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(20, 45, 73, 0.08);
+  align-items: start;  
+}
+
+.user_panel {
+  min-width: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 20px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.user_leftPanel {
+  background: #fff;
+  border-right: 1px solid #dce5f2;
+  align-self: start;  
+}
+
+.user_panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 6px;
+}
+
+.user_panelTitleWrap {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user_panelTitleWrap h3 {
+  margin: 0;
+  color: #2b2b2b;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -1.1px;
+  white-space: nowrap;
+}
+
+.user_panelTitleWrap p {
+  margin: 0;
+  color: #5c6f87;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1.3;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user_addBtn,
+.user_changeBtn {
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #2a93ca 0%, #1a78b0 100%);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.user_addBtn {
+  min-width: 100px;
+  height: 34px;
+  padding: 0 18px;
+}
+
+.user_changeBtn {
+  min-width: 90px;
+  height: 34px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+.user_searchRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #c7d1dd;
+  padding: 0px 0 10px;
+}
+
+.user_searchInput {
+  border: 0;
+  background: transparent;
+  color: #9e9e9e;
+  font-family: Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 32px;
+  letter-spacing: -0.8px;
+  height: 32px;
+  padding: 0;
+}
+
+
+.user_searchInput::placeholder {
+  color: #9e9e9e;
+  font-family: Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 48px;
+  letter-spacing: -0.8px;
+}
+
+.user_searchInput:focus {
+  outline: none;
+}
+
+.user_searchBtn {
+  border: 0;
+  background: transparent;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.user_tableWrap {
+  overflow: auto;
+  border-radius: 18px;
+  border: 1px solid #d6deea;
+  background: #fff;
+
+  /* 추가: 10행 기준 높이 고정 */
+  --user-head-row-h: 42px;
+  --user-body-row-h: 42px;
+  min-height: calc(var(--user-head-row-h) + (var(--user-body-row-h) * 10));  
+}
+
+.user_table {
+  width: 100%;
+  min-width: 760px; /* 920 -> 760 */
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.user_table th {
+  background: #f4f6fa;
+  color: #5c6f87;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  padding: 10px 6px;
+  text-align: center;
+  border-bottom: 1px solid #dbe4ef;
+}
+
+.user_table td {
+  color: #2b2b2b;
+  font-size: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  padding: 11px 10px;
+  text-align: center;
+  border-bottom: 1px solid #edf2f6;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.user_table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.user_tableRowActive td {
+  background: #edf3ff;
+}
+
+.user_emptyCell {
+  cursor: default !important;
+  color: #7e8fa2 !important;
+  padding: 20px 10px !important;
+}
+
+.user_pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0 0;
+}
+
+.user_pageArrow,
+.user_pageNum {
+  border: 0;
+  background: transparent;
+  color: #7e8fa2;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.user_pageNumActive {
+  background: #0b77b8;
+  color: #fff;
+}
+
+.user_detailScroll {
+  min-height: 0;
+  max-height: 690px;
+  overflow: auto;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding-right: 4px;
+}
+
+.user_infoCard {
+  border-radius: 12px;
+  border: 1px solid #d6deea;
+  background: #f8fbff;
+  padding: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.user_infoHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #c7d1dd;
+}
+
+.user_infoTitleWrap {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user_infoTitleWrap h4 {
+  margin: 0;
+  color: #2b2b2b;
+  font-size: 20px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  white-space: nowrap;
+}
+
+.user_infoTitleWrap p {
+  margin: 0;
+  color: #5c6f87;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user_infoRows {
+  display: grid;
+  gap: 8px;
+}
+
+.user_infoRow {
+  display: grid;
+  grid-template-columns: 122px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.user_labelCell {
+  border-radius: 10px;
+  background: #edf5ff;
+  color: #224bc0;
+  font-size: 16px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  min-height: 38px;
+  display: grid;
+  place-items: center;
+}
+
+.user_valueCell {
+  border-radius: 6px;
+  border: 1px solid #d6deea;
+  background: #fff;
+  color: #2b2b2b;
+  font-size: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+}
+
+.user_emptyDetail {
+  border: 1px dashed #c7d1dd;
+  border-radius: 10px;
+  background: #fff;
+  min-height: 74px;
+  color: #7e8fa2;
+  font-size: 14px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.user_rightPanel {
+  background: #f6faff;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  align-self: start;
+}
+/* 기업 클릭 시 오른쪽 패널 슬라이드 인 */
+@keyframes userRightPanelSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-22px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.user_rightPanelSlideIn {
+  animation: userRightPanelSlideIn 0.28s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .user_rightPanelSlideIn {
+    animation: none;
+  }
+}
+
+
+.user_detailScroll {
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 4px;
+}
+@media (max-width: 1560px) {
+  .user_grid {
+    grid-template-columns: 1fr;
+  }
+
+  .user_detailScroll {
+    max-height: none;
+  }
+}
+
+@media (max-width: 1200px) {
+  .user_root {
+    padding: 14px 14px 18px;
+  }
+
+  .user_pageHead h1 {
+    font-size: 30px;
+    letter-spacing: -1px;
+  }
+
+  .user_pageHead p {
+    font-size: 14px;
+  }
+
+  .user_statCard {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .user_statPills {
+    justify-content: flex-start;
+  }
+
+  .user_cardTitleWrap,
+  .user_panelTitleWrap,
+  .user_infoTitleWrap {
+    flex-wrap: wrap;
+  }
+
+  .user_panelTitleWrap p,
+  .user_infoTitleWrap p {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 760px) {
+  .user_panelHead {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .user_addBtn {
+    width: 100%;
+  }
+
+  .user_infoRow {
+    grid-template-columns: 1fr;
+  }
+
+  .user_labelCell,
+  .user_valueCell {
+    min-height: 36px;
+  }
+
+  .user_statPill {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+/* 폰트 강제 */
+.user_root,
+.user_root table,
+.user_root th,
+.user_root td,
+.user_root input,
+.user_root select,
+.user_root button,
+.user_root p,
+.user_root span,
+.user_root em,
+.user_root strong,
+.user_root h1,
+.user_root h2,
+.user_root h3,
+.user_root h4 {
+  font-family: Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif !important;
+}

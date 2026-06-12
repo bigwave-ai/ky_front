@@ -1,0 +1,262 @@
+/* app/(view)/(every)/signin/signin.module.css */
+@charset "utf-8";
+
+/* ==========================================================================
+   01) Signin Background
+   ========================================================================== */
+.auth_background {
+  min-height: 100vh;
+  width: 100%;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  background:
+    /* linear-gradient(110deg, rgba(205, 196, 222, 0.52) 0%, rgba(186, 206, 226, 0.52) 100%), */
+    url("../../../components/style/resources/imgs/system_background.png") center / cover no-repeat;
+}
+
+/* ==========================================================================
+   02) Card Frame
+   ========================================================================== */
+.signin_card {
+  width: min(560px, calc(100vw - 32px));
+  border-radius: 20px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(44, 61, 94, 0.16);
+}
+
+.signin_card_head {
+  padding: 18px 20px 14px;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  background: linear-gradient(90deg, #b3b6f0 0%, #efb8bf 100%);
+}
+
+.signin_head_badge {
+  height: 28px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: #32489f;
+  color: #ffffff;
+  font-family: Pretendard, "Noto Sans KR", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: -0.2px;
+}
+
+.signin_head_title {
+  margin: 0;
+  color: #2e4398;
+  font-family: Pretendard, "Noto Sans KR", sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  text-align: center;
+}
+
+/* ==========================================================================
+   03) Card Body
+   ========================================================================== */
+.signin_card_body {
+  padding: 30px 38px 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.login_text {
+  margin: 0;
+  text-align: center;
+  color: #121212;
+  font-family: Pretendard, "Noto Sans KR", sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+}
+
+.login_detail_text {
+  margin-top: 10px;
+  text-align: center;
+  color: #8f8f92;
+  font-family: Pretendard, "Noto Sans KR", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.4px;
+}
+
+.login_id_text,
+.login_pw_text {
+  margin-top: 22px;
+  margin-bottom: 8px;
+  color: #2f2f34;
+  font-family: Pretendard, "Noto Sans KR", sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  padding-left:18px;
+}
+
+.signin_input_wrap {
+  width: 100%;
+}
+
+/* MUI TextField 내부 스타일 보정 */
+.signin_input_wrap :global(.MuiOutlinedInput-root) {
+  border-radius: 12px;
+}
+
+.signin_input_wrap :global(.MuiInputBase-input) {
+  font-size: 16px;
+  font-family: Pretendard, "Noto Sans KR", sans-serif;
+  color: #1f2a37;
+  padding-left: 14px;
+}
+
+.signin_input_wrap :global(.MuiInputBase-input::placeholder) {
+  color: #b8bec7;
+  opacity: 1;
+}
+
+/* ==========================================================================
+   04) Remember + Button + Logo
+   ========================================================================== */
+.remember_row {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  padding-left:18px;
+}
+
+.remember_me {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.remember_checkbox {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #1555a1;
+  cursor: pointer;
+}
+
+.remember_label {
+  color: #3f4b59;
+  font-family: Pretendard, "Noto Sans KR", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.login_button_div {
+  margin-top: 18px;
+  width: 100%;
+}
+
+.signin_button {
+  width: 100%;
+  height: 46px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #1d5dab 0%, #15529c 100%);
+  color: #ffffff;
+  font-family: Pretendard, "Noto Sans KR", sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  cursor: pointer;
+  transition: filter 0.16s ease, transform 0.08s ease;
+}
+
+.signin_button:hover {
+  filter: brightness(0.98);
+}
+
+.signin_button:active {
+  transform: translateY(1px);
+}
+
+.signin_button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.company_logo_container {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.company_logo_bottom {
+  width: 192px;
+  height: 38px;
+  background: url("../../../components/style/resources/imgs/company_logo_white.png") center / contain no-repeat;
+}
+
+/* ==========================================================================
+   05) Responsive
+   ========================================================================== */
+@media (max-width: 768px) {
+  .auth_background {
+    padding: 12px;
+  }
+
+  .signin_card {
+    width: min(520px, calc(100vw - 24px));
+  }
+
+  .signin_card_head {
+    padding: 14px 14px 12px;
+  }
+
+  .signin_head_badge {
+    font-size: 12px;
+    height: 24px;
+  }
+
+  .signin_head_title {
+    font-size: 22px;
+    letter-spacing: -0.5px;
+  }
+
+  .signin_card_body {
+    padding: 22px 18px 18px;
+  }
+
+  .login_text {
+    font-size: 32px;
+  }
+
+  .login_detail_text {
+    font-size: 14px;
+  }
+
+  .login_id_text,
+  .login_pw_text {
+    margin-top: 18px;
+    font-size: 16px;
+  }
+
+  .signin_input_wrap :global(.MuiInputBase-input) {
+    font-size: 15px;
+  }
+
+  .signin_button {
+    height: 42px;
+    font-size: 18px;
+  }
+
+  .company_logo_bottom {
+    width: 190px;
+    height: 36px;
+  }
+}

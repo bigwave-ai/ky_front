@@ -1,0 +1,427 @@
+/* 가변 폰트 */
+@font-face {
+  font-family: 'Pretendard';
+  src: url('/fonts/PretendardVariable.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-style: normal;
+}
+
+/* ===== Member ===== */
+.total{
+  display: flex;
+  width:100vw;
+  height:100vh;
+  background: #f8f8f8;
+}
+
+.total_content {
+  width: 100%;
+  min-height: 100vh;
+  background:
+    /* linear-gradient(110deg, rgba(205, 196, 222, 0.30) 0%, rgba(186, 206, 226, 0.30) 100%), */
+    url("../imgs/system_background.png") center / cover no-repeat;
+}
+
+/* ===== Header ===== */
+.header {
+  height: 72px;
+  border-bottom: 1px solid #d9d9d9;
+  background: linear-gradient(90deg, #F4EFF9 0%, #f6f9ff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px 0 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header_left {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  margin-left:220px;
+}
+
+.header_title {
+  margin: 0;
+  color: #585858;
+  font-family: Heebo, Pretendard, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+  letter-spacing: -1.5px;
+  white-space: nowrap;
+}
+
+.header_right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.header_username {
+  color: #155196;
+  font-family: Heebo, Pretendard, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 17px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+  letter-spacing: -1.5px;
+}
+
+.header_text {
+  color: #585858;
+  font-family: Heebo, Pretendard, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 17px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+  letter-spacing: -1.5px;
+  margin-right: 6px;
+}
+
+.header_breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  white-space: nowrap;
+  font-family: Heebo, Pretendard, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 17px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+  letter-spacing: -1.5px;
+}
+
+.header_breadcrumb_prev {
+  color: #8b8b8b;
+}
+
+.header_breadcrumb_current {
+  color: #585858;
+}
+
+.header_breadcrumb_separator {
+  margin: 0 15px;
+  color: #8b8b8b;
+}
+
+/* ===== LSB ===== */
+.lsb {
+  width: 220px;
+  min-width: 220px;
+  height: 100vh;
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 101;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: linear-gradient(184deg, #0c2039 0%, #21436a 78.43%);
+  border-right: 1px solid rgba(182, 216, 246, 0.18);
+}
+
+.lsb_brand {
+  height: 70px;
+  padding: 16px 14px 14px;
+  border-bottom: 1px solid rgba(182, 216, 246, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lsb_brand_texts {
+  display: flex;
+  flex-direction: column;
+}
+
+.lsb_brand_texts strong {
+  color: #fff;
+  font-family: Pretendard, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.6px;
+}
+
+.lsb_brand_texts span {
+  color: #b2c7e2;
+  font-family: Pretendard, sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.9px;
+}
+
+.lsb_inner {
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.lsb_group {
+  display: grid;
+  gap: 8px;
+}
+
+.lsb_section_title {
+  padding: 0 8px;
+  color: #c8c8c8;
+  font-family: Pretendard, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: lowercase;
+}
+
+.lsb_nav {
+  display: grid;
+  gap: 8px;
+}
+
+.lsb_item {
+  height: 40px;
+  width: 100%;
+  border: 1px solid rgba(151, 201, 236, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #e6f4ff;
+  display: grid;
+  grid-template-columns: 12px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, transform 0.12s ease;
+}
+
+.lsb_item:hover {
+  background: rgba(44, 173, 235, 0.12);
+  border-color: rgba(112, 197, 242, 0.35);
+  transform: translateY(-1px);
+}
+
+.lsb_item_active {
+  background: linear-gradient(180deg, rgba(31, 165, 230, 0.2), rgba(15, 129, 201, 0.22));
+  border-color: rgba(103, 197, 248, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(151, 220, 255, 0.22);
+}
+
+.lsb_item_dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #57b8f4;
+  box-shadow: 0 0 0 4px rgba(87, 184, 244, 0.16);
+}
+
+.lsb_item_active .lsb_item_dot {
+  background: #ff9d2a;
+  box-shadow: 0 0 0 4px rgba(255, 157, 42, 0.2);
+}
+
+.lsb_item_label {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 모바일 사이드바 열림(닫기 버튼 표시) 상태에서만 브랜드 텍스트 축소 */
+.lsb_brand_texts_compact strong {
+  font-size: 11px;
+  line-height: 1.1;
+  letter-spacing: -0.4px;
+}
+
+.lsb_brand_texts_compact span {
+  font-size: 14px;
+  line-height: 1.1;
+  letter-spacing: -0.6px;
+}
+
+@media (max-width: 1200px) {
+  .lsb {
+    transform: translateX(-100%);
+    transition: transform 0.24s ease;
+    z-index: 160;
+    grid-template-rows: auto 1fr; /* 기존 auto auto 1fr -> 변경 */
+  }
+
+  .lsbMobileOpen {
+    transform: translateX(0);
+  }
+
+  .lsb_brand {
+    padding-right: 10px;
+    gap: 8px;
+  }
+
+  .lsbCloseBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;           /* 크기 축소 */
+    height: 24px;          /* 크기 축소 */
+    border: 1px solid rgba(207, 231, 250, 0.4);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #e7f3ff;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    flex: 0 0 24px;
+  }
+}
+
+/* ===== 컨텐츠 래퍼 ===== */
+.contents_container {
+  display: flex;
+  justify-content: center;
+  min-width: 880px;
+  margin-left: 220px;
+  background: transparent;
+}
+
+
+/* Mobile Sidebar Toggle */
+.mobileMenuBtn,
+.mobileMenuOverlay,
+.lsbCloseBtn {
+  display: none;
+}
+
+@media (max-width: 1200px) {
+  .total {
+    overflow-x: hidden;
+  }
+
+  .header {
+    padding-left: 64px;
+  }
+
+  .header_left {
+    margin-left: 0;
+  }
+
+  .contents_container {
+    margin-left: 0;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .lsb {
+    transform: translateX(-100%);
+    transition: transform 0.24s ease;
+    z-index: 160;
+    grid-template-rows: auto auto 1fr;
+  }
+
+  .lsbMobileOpen {
+    transform: translateX(0);
+  }
+
+  .mobileMenuBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 170;
+    min-width: 64px;
+    height: 36px;
+    border: 1px solid #9fc4de;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #123a60;
+    font-family: Pretendard, sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(10, 35, 62, 0.16);
+  }
+
+  .mobileMenuOverlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 150;
+    border: 0;
+    background: rgba(8, 24, 42, 0.36);
+    cursor: pointer;
+  }
+
+  .lsbCloseBtn {
+    display: grid;
+    place-items: center;
+    position: static;
+    justify-self: end;
+    /* margin: 10px 10px 0 0; */
+    width: 30px;
+    height: 30px;
+    border: 1px solid rgba(207, 231, 250, 0.4);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #e7f3ff;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+  }
+}
+
+
+/* 기본: 헤더 메뉴 버튼 숨김 */
+.header_menu_btn {
+  display: none;
+}
+
+.header_menu_icon {
+  display: inline-grid;
+  gap: 4px;
+}
+
+.header_menu_icon i {
+  display: block;
+  width: 16px;
+  height: 2px;
+  background: #2b4f78;
+  border-radius: 99px;
+}
+
+/* 기존 mobileMenuBtn은 이제 사용하지 않음 */
+.mobileMenuBtn {
+  display: none !important;
+}
+
+@media (max-width: 1200px) {
+  .header {
+    padding-left: 16px; /* 기존 64px이면 16px로 변경 */
+  }
+
+  .header_left {
+    margin-left: 0;
+    gap: 10px;
+  }
+
+  .header_menu_btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0);
+    cursor: pointer;
+    flex: 0 0 auto;
+    /* box-shadow: 0 4px 10px rgba(10, 35, 62, 0.12); */
+  }
+}

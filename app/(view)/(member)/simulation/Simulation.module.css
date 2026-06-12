@@ -1,0 +1,1075 @@
+/* ==========================================================================
+   12) Simulation Page
+   ========================================================================== */
+.simulation_root {
+  width: 100%;
+  min-height: calc(100vh - 72px);
+  min-width: 0;
+  padding: 16px 24px 20px 20px;
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  align-items: start;
+  grid-auto-rows: max-content;
+  background:
+    linear-gradient(90deg, rgba(240, 236, 255, 0.62) 0%, rgba(232, 242, 255, 0.62) 100%),
+    url("../../../components/style/resources/imgs/system_background.png") center / cover no-repeat;
+}
+
+.simulation_pageHead {
+  width: 100%;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-height: 0;
+
+  position: relative;
+  z-index: 40;
+  overflow: visible;  
+}
+
+.simulation_pageHead h1 {
+  margin: 0;
+  color: #243ea9;
+  font-family: Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -1.3px;
+  line-height: 1.15;
+}
+
+.simulation_pageHead p {
+  margin: 10px 0 0;
+  color: #4d4d4d;
+  font-family: Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  line-height: 1.35;
+}
+
+.simulation_pageHeadTop {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  position: relative;
+  z-index: 41;
+  overflow: visible;  
+}
+
+.simulation_pageHeadText {
+  display: grid;
+  gap: 6px;
+}
+
+.simulation_customerSelectBox {
+  margin-left: auto;
+  min-width: 320px;
+  max-width: 460px;
+  border: 1px solid #d2e6fb;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 10px rgba(36, 72, 130, 0.08);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+
+  position: relative;
+  z-index: 60;
+  overflow: visible;  
+}
+
+.simulation_customerSelectTitle {
+  color: #2f4f7f;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+
+.simulation_customerSelectControls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  position: relative;
+  z-index: 61;  
+}
+
+.simulation_customerSearchInput {
+  width: 100%;
+  height: 34px;
+  border: 1px solid #c5ddf4;
+  border-radius: 8px;
+  background: #fff;
+  color: #2b2b2b;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+.simulation_customerSearchInput:focus {
+  outline: none;
+  border-color: #71afe0;
+  box-shadow: 0 0 0 2px rgba(72, 147, 209, 0.14);
+}
+
+.simulation_customerSelectError {
+  margin: 2px 0 0;
+  color: #d14343;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  line-height: 1.3;
+}
+
+/* 관리자 고객사 콤보박스 */
+.simulation_customerCombo {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 0px;
+  align-items: center;
+  gap: 0;
+  position: relative;
+  z-index: 62;  
+}
+
+.simulation_customerCombo .simulation_customerSearchInput {
+  width: 100%;
+  padding-right: 36px;
+}
+
+.simulation_customerComboArrow {
+  width: 34px;
+  height: 34px;
+  margin-left: -34px;
+  border: 0;
+  background: transparent;
+  color: #4f6b88;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.simulation_customerComboArrow:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.simulation_customerDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid #c5ddf4;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(30, 62, 104, 0.16);
+  z-index: 1000;
+  padding: 4px;
+  z-index: 9999;
+}
+
+.simulation_customerDropdownItem {
+  width: 100%;
+  min-height: 34px;
+  border: 0;
+  border-radius: 6px;
+  background: #fff;
+  color: #2b2b2b;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+.simulation_customerDropdownItem:hover {
+  background: #f3f9ff;
+}
+
+.simulation_customerDropdownItemActive {
+  background: #e9f4ff;
+  color: #1f5ea8;
+}
+
+.simulation_customerDropdownEmpty {
+  min-height: 34px;
+  border-radius: 6px;
+  color: #7b8fa6;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+}
+
+
+/* 상단 선택 카드 */
+.simulation_selectCard {
+  align-self: start;
+  min-width: 0;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 14px rgba(20, 45, 73, 0.08);
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.simulation_selectTitleWrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.simulation_selectTitleWrap h2 {
+  margin: 0;
+  color: #2b2b2b;
+  font-family: Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  white-space: nowrap;
+}
+
+.simulation_selectTitleWrap p {
+  margin: 0;
+  color: #5c6f87;
+  font-family: Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  line-height: 1.3;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.simulation_selectControls {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+  width: auto;
+}
+
+.simulation_field {
+  min-width: 0;
+  border-radius: 999px;
+  background: #eff7ff;
+  padding: 8px 16px;
+  box-sizing: border-box;
+}
+
+.simulation_field_equipment,
+.simulation_field_time {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.simulation_field_equipment {
+  width: 400px;
+  min-width: 400px;
+}
+
+.simulation_field_time {
+  width: 300px;
+  min-width: 300px;
+}
+
+.simulation_field_equipment .simulation_fieldTop,
+.simulation_field_time .simulation_fieldTop {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.simulation_fieldLabel {
+  color: #2b2b2b;
+  font-family: Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  white-space: nowrap;
+}
+
+.simulation_fieldHint {
+  color: #5c6f87;
+  font-family: Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.simulation_select,
+.simulation_numberInput {
+  height: 38px;
+  border: 1px solid #c9d8e6;
+  border-radius: 10px;
+  background: #fff;
+  color: #2b2b2b;
+  font-family: Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+
+.simulation_select:focus,
+.simulation_numberInput:focus {
+  outline: none;
+  border-color: #79a9d0;
+  box-shadow: 0 0 0 2px rgba(46, 133, 196, 0.15);
+}
+
+.simulation_select_equipment {
+  width: 180px;
+  min-width: 180px;
+  margin-left: auto;
+}
+
+.simulation_numberInput {
+  width: 96px;
+  max-width: 96px;
+  margin-left: auto;
+}
+
+/* 조회시간 스피너(▲▼) */
+.simulation_numberInputSpin {
+  appearance: auto;
+  -webkit-appearance: auto;
+  -moz-appearance: auto;
+}
+
+.simulation_numberInputSpin::-webkit-outer-spin-button,
+.simulation_numberInputSpin::-webkit-inner-spin-button {
+  -webkit-appearance: auto;
+  margin: 0;
+  opacity: 1;
+}
+
+.simulation_loadBtn {
+  height: 42px;
+  min-width: 96px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #2a93ca 0%, #1a78b0 100%);
+  color: #fff;
+  font-family: Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  cursor: pointer;
+}
+
+/* 본문 */
+.simulation_grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(420px, 1fr) minmax(680px, 1.95fr);
+  gap: 12px;
+  align-items: stretch;
+  align-self: start;
+}
+
+.simulation_card {
+  min-width: 0;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 14px rgba(20, 45, 73, 0.08);
+  padding: 12px 12px 14px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.simulation_cardHead {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.simulation_cardHead h3 {
+  margin: 0;
+  color: #2b2b2b;
+  font-family: Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.9px;
+  white-space: nowrap;
+}
+
+.simulation_cardHead p {
+  margin: 0;
+  color: #9a9a9a;
+  font-family: Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  white-space: nowrap;
+}
+
+/* 분석 조건 설정 카드 */
+.simulation_conditionCard {
+  padding: 20px;
+  gap: 12px;
+}
+
+.simulation_conditionHead {
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 4px;
+}
+
+.simulation_conditionHead h3 {
+  margin: 0;
+  color: #2b2b2b;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -1.2px;
+  white-space: nowrap;
+}
+
+.simulation_conditionHead p {
+  margin: 0;
+  color: #aaaaaa;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+
+.simulation_conditionInfo {
+  margin: 0;
+  color: #5c6f87;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.simulation_conditionTableHead {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  text-align: center;
+  align-items: center;
+  padding: 8px 10px;
+  padding-top: 20px;
+  border-top: 1px solid #8f98a6;
+  color: #2b2b2b;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+}
+
+.simulation_conditionRows {
+  display: grid;
+  gap: 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.simulation_conditionRow {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px;
+  background: #f2f6ff;
+}
+
+.simulation_conditionRows .simulation_conditionRow:nth-child(even) {
+  background: #ffffff;
+}
+
+.simulation_conditionName {
+  color: #2b2b2b;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -1px;
+  justify-self: center;
+}
+
+.simulation_sliderBox {
+  display: grid;
+}
+
+.simulation_sliderMeta {
+  display: flex;
+  justify-content: space-between;
+  color: #7f93ab;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  padding: 0 2px;
+}
+
+.simulation_sliderTrackWrap {
+  position: relative;
+  padding-top: 20px;
+}
+
+.simulation_sliderValueBadge {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  min-width: 24px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: #6f86e8;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  letter-spacing: -0.1px;
+  z-index: 2;
+}
+
+.simulation_sliderValueBadge::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  width: 8px;
+  height: 8px;
+  transform: translateX(-50%) rotate(45deg);
+  background: #6f86e8;
+}
+
+.simulation_slider {
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  appearance: none;
+  cursor: pointer;
+  background: #ced7ef;
+}
+
+.simulation_slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.simulation_slider::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #6f86e8;
+  border-radius: 999px;
+  background: #fff;
+  appearance: none;
+  margin-top: -6px;
+}
+
+.simulation_slider::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: #ced7ef;
+}
+
+.simulation_slider::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: #6f86e8;
+}
+
+.simulation_slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #6f86e8;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.simulation_runBtn {
+  border: 0;
+  border-radius: 5px;
+  background: #627dff;
+  box-shadow: 0 0 10px 0 #b9c5ff inset;
+  height: 56px;
+  color: #fff;
+  font-family: Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  cursor: pointer;
+}
+
+/* 시뮬레이션 결과 카드 */
+.simulation_resultCard {
+  padding: 20px;
+  gap: 12px;
+}
+
+.simulation_resultHead {
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 8px;
+}
+
+.simulation_resultHead h3 {
+  margin: 0;
+  color: #2b2b2b;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -1.2px;
+  white-space: nowrap;
+}
+
+.simulation_resultHead p {
+  margin: 0;
+  color: #aaaaaa;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+
+.simulation_resultIntro {
+  margin: 0;
+  color: #5c6f87;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #8f98a6;
+}
+
+.simulation_resultLayout {
+  display: grid;
+  grid-template-columns: minmax(330px, 1fr) minmax(450px, 1.3fr);
+  gap: 14px;
+  align-items: start;
+  min-width: 0;
+}
+
+.simulation_resultLeft {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.simulation_resultRight {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* 시뮬레이션 요약 */
+.simulation_summaryBox {
+  border-radius: 10px;
+  border: 1px solid #e7e8ea;
+  background: linear-gradient(90deg, #e0f1f5 0%, #fbf0e4 100%);
+  padding: 10px 12px;
+}
+
+.simulation_summaryTitle {
+  display: inline-block;
+  margin-bottom: 6px;
+  color: #0b65d1;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+}
+
+.simulation_summaryText {
+  margin: 0;
+  color: #000;
+  font-family: Heebo, Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+  letter-spacing: -0.5px;
+}
+
+.simulation_summaryUpText {
+  color: #008d34;
+  font-family: Heebo, Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+  letter-spacing: -0.5px;
+}
+
+.simulation_summaryDownText {
+  color: #f86565;
+  font-family: Heebo, Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+  letter-spacing: -0.5px;
+}
+
+/* 기준/시뮬레이션 결과 박스 */
+.simulation_resultListCard {
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: 0 0 2px 2px rgba(47, 181, 239, 0.25) inset;
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.simulation_resultListCard h4 {
+  margin: 0;
+  color: #2b2b2b;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #8f98a6;
+}
+
+.simulation_resultRow {
+  border: 1px solid #e7e8ea;
+  border-radius: 10px;
+  background: #fff;
+  padding: 8px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.simulation_resultRowHighlight {
+  border-radius: 10px;
+  border: 1px solid #e7e8ea;
+  background: linear-gradient(90deg, #e0f1f5 0%, #fbf0e4 100%);
+}
+
+.simulation_resultLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #5c6f87;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: -0.6px;
+  min-width: 0;
+}
+
+.simulation_resultDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: #2faad6;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.simulation_resultRow strong {
+  color: #2b2b2b;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+/* 차트 박스(컨테이너/타이틀만 페이지 CSS 유지) */
+.simulation_chartBox {
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: 0 0 2px 2px rgba(47, 181, 239, 0.25) inset;
+  padding: 16px;
+  min-width: 0;
+}
+
+.simulation_chartTitle {
+  margin: 0;
+  color: #2b2b2b;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #8f98a6;
+}
+
+/* 입력 변경 영향도 박스(컨테이너/타이틀만 페이지 CSS 유지) */
+.simulation_impactBox {
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: 0 0 2px 2px rgba(47, 181, 239, 0.25) inset;
+  padding: 16px;
+  display: grid;
+  gap: 22px;
+  min-width: 0;
+}
+
+.simulation_impactBox h4 {
+  margin: 0;
+  color: #2b2b2b;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #8f98a6;
+}
+
+.simulation_summaryIncreaseText {
+  color: #e14b4b; /* 증가 = 빨강 */
+  font-family: Heebo, Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+  letter-spacing: -0.5px;
+}
+
+.simulation_summaryDecreaseText {
+  color: #138f45; /* 감소 = 초록 */
+  font-family: Heebo, Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+  letter-spacing: -0.5px;
+}
+
+.simulation_summaryNeutralText {
+  color: #5c6f87;
+  font-family: Heebo, Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+  letter-spacing: -0.5px;
+}
+
+.simulation_impactEmpty {
+  margin: 0;
+  color: #7a8798;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  padding: 4px 2px 0;
+}
+
+/* 반응형 */
+@media (max-width: 1600px) {
+  .simulation_field_equipment {
+    width: 320px;
+    min-width: 320px;
+  }
+
+  .simulation_field_time {
+    width: 260px;
+    min-width: 260px;
+  }
+}
+
+@media (max-width: 1360px) {
+  .simulation_selectCard {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .simulation_selectControls {
+    margin-left: 0;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .simulation_field {
+    flex: 0 0 auto;
+  }
+
+  .simulation_field_equipment {
+    width: min(100%, 360px);
+    min-width: 260px;
+  }
+
+  .simulation_field_time {
+    width: min(100%, 300px);
+    min-width: 220px;
+  }
+
+  .simulation_grid {
+    grid-template-columns: 1fr;
+  }
+
+  .simulation_resultLayout {
+    grid-template-columns: 1fr;
+  }
+  .simulation_pageHeadTop {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .simulation_customerSelectBox {
+    margin-left: 0;
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+  }  
+}
+
+@media (max-width: 1024px) {
+  .simulation_root {
+    padding: 14px 14px 18px;
+  }
+
+  .simulation_pageHead h1 {
+    font-size: 30px;
+    letter-spacing: -1px;
+  }
+
+  .simulation_pageHead p {
+    font-size: 14px;
+  }
+
+  .simulation_selectTitleWrap h2 {
+    font-size: 22px;
+  }
+
+  .simulation_selectTitleWrap p {
+    font-size: 14px;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .simulation_cardHead {
+    flex-wrap: wrap;
+  }
+
+  .simulation_cardHead h3 {
+    font-size: 28px;
+  }
+
+  .simulation_cardHead p {
+    font-size: 13px;
+    white-space: normal;
+  }
+
+  .simulation_conditionTableHead,
+  .simulation_conditionRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .simulation_selectControls {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .simulation_field_equipment,
+  .simulation_field_time {
+    width: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    border-radius: 16px;
+  }
+
+  .simulation_field_equipment .simulation_fieldTop,
+  .simulation_field_time .simulation_fieldTop {
+    justify-content: flex-start;
+  }
+
+  .simulation_select_equipment,
+  .simulation_numberInput {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin-left: 0;
+  }
+
+  .simulation_loadBtn,
+  .simulation_runBtn {
+    width: 100%;
+  }
+  .simulation_customerSelectControls {
+    grid-template-columns: 1fr;
+  }  
+}
+
+@media (max-width: 560px) {
+  .simulation_root {
+    padding: 12px 10px 16px;
+  }
+
+  .simulation_pageHead h1 {
+    font-size: 28px;
+  }
+
+  .simulation_selectTitleWrap h2 {
+    font-size: 20px;
+  }
+}
+
+/* Simulation 폰트 강제 */
+.simulation_root,
+.simulation_root table,
+.simulation_root th,
+.simulation_root td,
+.simulation_root input,
+.simulation_root select,
+.simulation_root button,
+.simulation_root p,
+.simulation_root span,
+.simulation_root em,
+.simulation_root strong,
+.simulation_root h1,
+.simulation_root h2,
+.simulation_root h3,
+.simulation_root h4 {
+  font-family: Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif !important;
+}
+
+/* 단계 전환 애니메이션 */
+@keyframes simulationStageFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.simulation_stageFadeUp {
+  animation: simulationStageFadeUp 0.34s ease both;
+}
+
+.simulation_stageFadeUpDelayed {
+  animation: simulationStageFadeUp 0.42s 0.08s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .simulation_stageFadeUp,
+  .simulation_stageFadeUpDelayed {
+    animation: none;
+  }
+}

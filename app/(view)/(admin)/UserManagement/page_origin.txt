@@ -1,0 +1,364 @@
+'use client'
+
+import { useEffect, useMemo, useRef, useState } from 'react'
+import umc from './UserManagement.module.css'
+import imag from '@/app/components/style/resources/css/image.module.css'
+
+/*
+ * 01. 구분     : Page 컴포넌트
+ * 02. 타입     : Client Component
+ * 03. 업무구분  : 관리자 권한 - 사용자 관리 페이지
+ * 04. 설명     : 고객사/컴프레셔 정보 조회 및 관리 UI 제공
+ * 05. 작성일자  : 2026.03.30
+ * 06. 작성자   : 이우창
+ */
+
+type CompressorType = {
+  id: string
+  serialNumber: string
+  equipmentType: string
+  equipmentPower: string
+}
+
+type CompanyType = {
+  id: string
+  name: string
+  businessType: string
+  handlingItem: string
+  managerPhone: string
+  managerEmail: string
+  accountId: string
+  passwordMask: string
+  managerName: string
+  compressors: CompressorType[]
+}
+
+const BUSINESS_TYPES = ['소프트웨어 공급', '컴프레셔 가동', '컴프레셔 생산']
+const HANDLING_ITEMS = [
+  '취급물품 1',
+  '취급물품 2',
+  '취급물품 3',
+  '취급물품 4',
+  '취급물품 5',
+  '취급물품 6',
+  '취급물품 7',
+  '취급물품 8',
+  '취급물품 9',
+  '취급물품 10',
+]
+
+const MOCK_COMPANIES: CompanyType[] = Array.from({ length: 24 }, (_, i) => {
+  const companyNo = i + 1
+  const businessType = BUSINESS_TYPES[i % BUSINESS_TYPES.length]
+  const handlingItem = HANDLING_ITEMS[i % HANDLING_ITEMS.length]
+
+  return {
+    id: `company-${companyNo}`,
+    name: `기업 ${companyNo}`,
+    businessType,
+    handlingItem,
+    managerPhone: `010-1234-${String(1200 + companyNo).slice(-4)}`,
+    managerEmail: `compressor${companyNo}@gmail.com`,
+    accountId: `opop${String(50 + companyNo)}`,
+    passwordMask: '********',
+    managerName: `담당자 ${companyNo}`,
+    compressors: Array.from({ length: (companyNo % 3) + 1 }, (_, idx) => ({
+      id: `cp-${companyNo}-${idx + 1}`,
+      serialNumber: `250331${String(companyNo).padStart(3, '0')}${String(idx + 1).padStart(2, '0')}`,
+      equipmentType: `장비 타입 ${idx + 1}`,
+      equipmentPower: `${(idx + 1) * 1234}`,
+    })),
+  }
+})
+
+export default function UserManagementPage() {
+  /******************** 변수 영역 ********************/
+  const [companyKeyword, setCompanyKeyword] = useState('')
+  const [compressorKeyword, setCompressorKeyword] = useState('')
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>(MOCK_COMPANIES[0]?.id ?? '')
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const rowsPerPage = 10
+
+  const filteredCompanies = useMemo(() => {
+    const keyword = companyKeyword.trim().toLowerCase()
+    if (!keyword) return MOCK_COMPANIES
+
+    return MOCK_COMPANIES.filter((company) =>
+      [company.name, company.businessType, company.handlingItem, company.managerPhone, company.managerEmail]
+        .some((field) => field.toLowerCase().includes(keyword)),
+    )
+  }, [companyKeyword])
+
+  const totalPages = Math.max(1, Math.ceil(filteredCompanies.length / rowsPerPage))
+
+  const pagedCompanies = useMemo(() => {
+    const start = (currentPage - 1) * rowsPerPage
+    return filteredCompanies.slice(start, start + rowsPerPage)
+  }, [currentPage, filteredCompanies])
+
+  const selectedCompany = useMemo(
+    () => MOCK_COMPANIES.find((company) => company.id === selectedCompanyId) ?? MOCK_COMPANIES[0] ?? null,
+    [selectedCompanyId],
+  )
+
+  const filteredCompressors = useMemo(() => {
+    if (!selectedCompany) return []
+    const keyword = compressorKeyword.trim().toLowerCase()
+    if (!keyword) return selectedCompany.compressors
+
+    return selectedCompany.compressors.filter((cp) =>
+      [cp.serialNumber, cp.equipmentType, cp.equipmentPower].some((field) =>
+        field.toLowerCase().includes(keyword),
+      ),
+    )
+  }, [compressorKeyword, selectedCompany])
+
+  const customerCount = MOCK_COMPANIES.length
+  const compressorCount = MOCK_COMPANIES.reduce((acc, company) => acc + company.compressors.length, 0)
+
+  const pageNumbers = useMemo(() => Array.from({ length: totalPages }, (_, i) => i + 1), [totalPages])
+  const [detailPanelMotion, setDetailPanelMotion] = useState(0)
+
+  const leftPanelRef = useRef<HTMLElement | null>(null)
+  const [matchedRightHeight, setMatchedRightHeight] = useState(0)  
+  /******************** 함수 영역 ********************/
+  const handleSelectCompany = (companyId: string) => {
+    setSelectedCompanyId(companyId)
+    setCompressorKeyword('')
+    setDetailPanelMotion((prev) => prev + 1)
+  }
+    
+  /******************** 수행 영역 ********************/
+  useEffect(() => {
+    if (!filteredCompanies.length) {
+      setSelectedCompanyId('')
+      return
+    }
+
+    const exists = filteredCompanies.some((company) => company.id === selectedCompanyId)
+    if (!exists) {
+      setSelectedCompanyId(filteredCompanies[0].id)
+    }
+  }, [filteredCompanies, selectedCompanyId])
+
+  useEffect(() => {
+    const el = leftPanelRef.current
+    if (!el) return
+
+    const updateHeight = () => {
+      setMatchedRightHeight(Math.ceil(el.getBoundingClientRect().height))
+    }
+
+    updateHeight()
+    const observer = new ResizeObserver(updateHeight)
+    observer.observe(el)
+
+    return () => observer.disconnect()
+  }, [currentPage, companyKeyword, filteredCompanies.length])
+
+  return (
+    <div className={umc.user_root}>
+      <header className={umc.user_pageHead}>
+        <h1>고객사 및 컴프레셔 관리</h1>
+        <p>고객사와 해당 고객사의 컴프레셔 정보를 관리할 수 있는 페이지입니다.</p>
+      </header>
+
+      <section className={umc.user_statCard}>
+        <div className={umc.user_cardTitleWrap}>
+          <h2>고객사 및 컴프레셔 통계</h2>
+          <p>현재, 고객사의 수와 전체 컴프레셔 등록 수 입니다.</p>
+        </div>
+
+        <div className={umc.user_statPills}>
+          <div className={umc.user_statPill}>
+            <span>고객사 수</span>
+            <strong>{customerCount.toLocaleString('ko-KR')}</strong>
+          </div>
+          <div className={umc.user_statPill}>
+            <span>컴프레셔 수</span>
+            <strong>{compressorCount.toLocaleString('ko-KR')}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section className={umc.user_grid}>
+        <article ref={leftPanelRef} className={`${umc.user_panel} ${umc.user_leftPanel}`}>
+          <div className={umc.user_panelHead}>
+            <div className={umc.user_panelTitleWrap}>
+              <h3>고객사 관리</h3>
+              <p>고객사에 대해 추가/삭제/수정할 수 있습니다.</p>
+            </div>
+            <button type="button" className={umc.user_addBtn}>추가하기</button>
+          </div>
+
+          <div className={umc.user_searchRow}>
+            <input
+              type="text"
+              value={companyKeyword}
+              onChange={(e) => {
+                setCompanyKeyword(e.target.value)
+                setCurrentPage(1)
+              }}
+              className={umc.user_searchInput}
+              placeholder="고객사, 업종, 취급물품, 연락처, 메일 등 텍스트를 검색해주세요."
+            />
+            <button type="button" className={umc.user_searchBtn} aria-label="고객사 검색">
+              <i className={imag.search_grey_icon} aria-hidden="true" />
+            </button>
+          </div>
+
+          <div className={umc.user_tableWrap}>
+            <table className={umc.user_table}>
+              <thead>
+                <tr>
+                  <th>고객사</th>
+                  <th>업종</th>
+                  <th>취급물품</th>
+                  <th>담당자 연락처</th>
+                  <th>담당자 메일</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pagedCompanies.length ? (
+                  pagedCompanies.map((company) => (
+                    <tr
+                      key={company.id}
+                      className={selectedCompany?.id === company.id ? umc.user_tableRowActive : ''}
+                      onClick={() => handleSelectCompany(company.id)}
+                    >
+                      <td>{company.name}</td>
+                      <td>{company.businessType}</td>
+                      <td>{company.handlingItem}</td>
+                      <td>{company.managerPhone}</td>
+                      <td>{company.managerEmail}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className={umc.user_emptyCell}>검색 결과가 없습니다.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className={umc.user_pagination}>
+            <button
+              type="button"
+              className={umc.user_pageArrow}
+              aria-label="이전 페이지"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            >
+              &lt;
+            </button>
+
+            {pageNumbers.map((page) => (
+              <button
+                key={page}
+                type="button"
+                className={`${umc.user_pageNum} ${page === currentPage ? umc.user_pageNumActive : ''}`}
+                onClick={() => setCurrentPage(page)}
+              >
+                {page}
+              </button>
+            ))}
+
+            <button
+              type="button"
+              className={umc.user_pageArrow}
+              aria-label="다음 페이지"
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+            >
+              &gt;
+            </button>
+          </div>
+        </article>
+
+        <article
+          key={detailPanelMotion}
+          className={`${umc.user_panel} ${umc.user_rightPanel} ${umc.user_rightPanelSlideIn}`}
+          style={matchedRightHeight ? { height: `${matchedRightHeight}px` } : undefined}
+        >
+          <div className={umc.user_panelHead}>
+            <div className={umc.user_panelTitleWrap}>
+              <h3>{selectedCompany?.name ?? '-'}</h3>
+              <p>고객사에 대한 컴프레셔 정보를 확인해주세요.</p>
+            </div>
+            <button type="button" className={umc.user_addBtn}>추가하기</button>
+          </div>
+
+          <div className={umc.user_searchRow}>
+            <input
+              type="text"
+              value={compressorKeyword}
+              onChange={(e) => setCompressorKeyword(e.target.value)}
+              className={umc.user_searchInput}
+              placeholder="컴프레셔에 대한 정보를 검색해주세요."
+            />
+            <button type="button" className={umc.user_searchBtn} aria-label="컴프레셔 검색">
+              <i className={imag.search_grey_icon} aria-hidden="true" />
+            </button>
+          </div>
+
+          <div className={umc.user_detailScroll}>
+            <section className={umc.user_infoCard}>
+              <div className={umc.user_infoHead}>
+                <div className={umc.user_infoTitleWrap}>
+                  <h4>고객 정보</h4>
+                  <p>고객 정보 중 수정 가능한 정보를 확인하시고 변경사항이 있을 시 변경해주세요.</p>
+                </div>
+                <button type="button" className={umc.user_changeBtn}>변경하기</button>
+              </div>
+
+              <div className={umc.user_infoRows}>
+                <div className={umc.user_infoRow}>
+                  <div className={umc.user_labelCell}>아이디</div>
+                  <div className={umc.user_valueCell}>{selectedCompany?.accountId ?? '-'}</div>
+                </div>
+                <div className={umc.user_infoRow}>
+                  <div className={umc.user_labelCell}>비밀번호</div>
+                  <div className={umc.user_valueCell}>{selectedCompany?.passwordMask ?? '-'}</div>
+                </div>
+                <div className={umc.user_infoRow}>
+                  <div className={umc.user_labelCell}>담당자명</div>
+                  <div className={umc.user_valueCell}>{selectedCompany?.managerName ?? '-'}</div>
+                </div>
+              </div>
+            </section>
+
+            {filteredCompressors.length ? (
+              filteredCompressors.map((cp, index) => (
+                <section key={cp.id} className={umc.user_infoCard}>
+                  <div className={umc.user_infoHead}>
+                    <div className={umc.user_infoTitleWrap}>
+                      <h4>컴프레셔 장비 {index + 1}</h4>
+                    </div>
+                    <button type="button" className={umc.user_changeBtn}>변경하기</button>
+                  </div>
+
+                  <div className={umc.user_infoRows}>
+                    <div className={umc.user_infoRow}>
+                      <div className={umc.user_labelCell}>시리얼 번호</div>
+                      <div className={umc.user_valueCell}>{cp.serialNumber}</div>
+                    </div>
+                    <div className={umc.user_infoRow}>
+                      <div className={umc.user_labelCell}>장비 타입</div>
+                      <div className={umc.user_valueCell}>{cp.equipmentType}</div>
+                    </div>
+                    <div className={umc.user_infoRow}>
+                      <div className={umc.user_labelCell}>장비 마력</div>
+                      <div className={umc.user_valueCell}>{cp.equipmentPower}</div>
+                    </div>
+                  </div>
+                </section>
+              ))
+            ) : (
+              <div className={umc.user_emptyDetail}>조건에 맞는 컴프레셔가 없습니다.</div>
+            )}
+          </div>
+        </article>
+      </section>
+    </div>
+  )
+}
