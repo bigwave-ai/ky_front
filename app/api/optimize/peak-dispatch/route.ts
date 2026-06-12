@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPythonUrl, PYTHON_CONFIG } from '@/config/environment'
+import { getRouteSession, getScopedCustomerId } from '@/app/services/util/api-auth'
 
 /*
  * 01. 구분     : API Route (App Router)
@@ -22,8 +23,34 @@ const readJsonSafe = async (response: Response): Promise<any | null> => {
 }
 
 export async function POST(request: NextRequest) {
+  // 세션 검증: 로그인 사용자만 실행 가능
+  const session = await getRouteSession(request)
+  if (!session) {
+    return NextResponse.json({ success: false, message: '로그인이 필요합니다.' }, { status: 401 })
+  }
+
   try {
     const body = await request.json()
+
+    // 테넌트 스코프 강제: 비관리자는 본인 고객사로만 최적화 실행 가능 (IDOR 방지).
+    // 클라이언트가 보낸 customer_id가 세션과 다르면 차단하고, 누락 시 세션 값으로 강제한다.
+    const scopedCustomerId = getScopedCustomerId(session)
+    if (scopedCustomerId !== null) {
+      if (!scopedCustomerId) {
+        return NextResponse.json(
+          { success: false, message: '세션에 고객사 정보가 없습니다. 다시 로그인해주세요.' },
+          { status: 403 },
+        )
+      }
+      const requestedCustomerId = String(body?.customer_id ?? '').trim()
+      if (requestedCustomerId && requestedCustomerId !== scopedCustomerId) {
+        return NextResponse.json(
+          { success: false, message: '본인 고객사에 대해서만 실행할 수 있습니다.' },
+          { status: 403 },
+        )
+      }
+      body.customer_id = scopedCustomerId
+    }
 
     const backendUrl = getPythonUrl(PYTHON_CONFIG.ENDPOINTS.PEAK_DISPATCH_OPTIMIZE)
     if (!backendUrl) {

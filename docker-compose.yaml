@@ -7,6 +7,7 @@ services:  # 이 파일에서 정의하는 서비스
       dockerfile: ./Dockerfile
       args:  # 같은 폴더의 .env에서 값을 읽어 빌드 시 주입
         DB_URL: ${DB_URL}
+        JWT_SECRET: ${JWT_SECRET}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
         NEXT_PUBLIC_DATA_API_URL: ${NEXT_PUBLIC_DATA_API_URL}

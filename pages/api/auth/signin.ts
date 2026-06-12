@@ -2,6 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { PrismaClient } from "@prisma/client";
 import { serialize } from "cookie";
+import bcrypt from "bcrypt";
 import { jwtToken } from "../../../app/services/util/jwt";
 
 /*
@@ -115,12 +116,45 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // ── 비밀번호 검증 ─────────────────────────────────────────────
-    // 1) DB에 base64 저장된 경우: CUSTOMER_PASSWORD === pw
-    // 2) DB에 평문 저장된 경우: CUSTOMER_PASSWORD === decodeBase64(pw)
+    // 클라이언트(signin-client.tsx)는 pw를 base64(평문)으로 보낸다.
+    // 1) bcrypt 해시 저장(신규 정책): 디코딩한 평문으로 bcrypt.compare
+    // 2) 레거시(base64/평문 저장): 기존 방식으로 비교하고,
+    //    "정상 base64 입력"임이 확인될 때만 bcrypt 해시로 재저장(점진 마이그레이션)
     const decodedPw = decodeBase64Safely(pw);
-    const isMatched =
-      customer.CUSTOMER_PASSWORD === pw ||
-      (decodedPw !== null && customer.CUSTOMER_PASSWORD === decodedPw);
+    const storedPassword = customer.CUSTOMER_PASSWORD ?? "";
+
+    // bcrypt 해시 형식인지 정확히 판별($2a/$2b/$2y$cost$ + 60자).
+    // 단순 startsWith("$2")는 평문이 "$2..."로 시작하는 엣지에서 오판하므로 사용하지 않는다.
+    const looksLikeBcrypt =
+      storedPassword.length === 60 && /^\$2[aby]\$\d{2}\$/.test(storedPassword);
+
+    let isMatched = false;
+    if (looksLikeBcrypt) {
+      isMatched = decodedPw !== null && (await bcrypt.compare(decodedPw, storedPassword));
+    } else {
+      isMatched =
+        storedPassword === pw ||
+        (decodedPw !== null && storedPassword === decodedPw);
+
+      // 브라우저가 보낸 정상 base64(평문)일 때만 마이그레이션한다.
+      // 이렇게 하면 평문 pw를 보내는 비정상 클라이언트로 인해
+      // 잘못된 해시가 저장되어 계정이 영구 잠기는 것을 방지한다.
+      const isCanonicalBase64 =
+        decodedPw !== null &&
+        Buffer.from(decodedPw, "utf-8").toString("base64") === pw;
+
+      if (isMatched && isCanonicalBase64) {
+        try {
+          await prisma.tB_CUSTOMER.update({
+            where: { CUSTOMER_ID: customer.CUSTOMER_ID },
+            data: { CUSTOMER_PASSWORD: await bcrypt.hash(decodedPw, 10) },
+          });
+        } catch (migrationError) {
+          // 마이그레이션 실패는 로그인 자체를 막지 않음
+          console.error("legacy password bcrypt migration failed:", migrationError);
+        }
+      }
+    }
 
     if (!isMatched) {
       return res.status(401).json({

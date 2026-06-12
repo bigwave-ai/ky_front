@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { PrismaClient } from '@prisma/client'
+import { requireAdminSession } from '../../../app/services/util/api-auth'
 
 /*
  * 01. 구분     : API
@@ -45,10 +46,8 @@ const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
 const prisma = globalForPrisma.prisma ?? new PrismaClient()
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
-const toMask = (raw: string | null | undefined) => {
-  const len = Math.max(8, (raw ?? '').length)
-  return '*'.repeat(len)
-}
+// 저장 형식(bcrypt 해시는 60자)이 UI에 노출되지 않도록 고정 길이로 마스킹한다.
+const toMask = (raw: string | null | undefined) => (raw ? '*'.repeat(8) : '')
 
 export default async function handler(
   req: NextApiRequest,
@@ -62,6 +61,10 @@ export default async function handler(
       message: `Method ${req.method} Not Allowed`,
     })
   }
+
+  // 관리자 세션 검증: 비로그인/비관리자 요청 차단
+  const session = await requireAdminSession(req, res)
+  if (!session) return
 
   try {
     const [deviceTypes, dataTypes, customers] = await Promise.all([

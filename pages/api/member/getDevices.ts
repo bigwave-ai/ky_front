@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { PrismaClient } from '@prisma/client'
+import { isAdminSession, requireSession } from '../../../app/services/util/api-auth'
 
 /*
  * 01. 구분     : API
@@ -38,6 +39,10 @@ export default async function handler(
     })
   }
 
+  // 로그인 세션 검증
+  const session = await requireSession(req, res)
+  if (!session) return
+
   try {
     const customerId =
       typeof req.query.customerId === 'string'
@@ -49,6 +54,15 @@ export default async function handler(
         success: false,
         data: [],
         message: 'customerId가 필요합니다.',
+      })
+    }
+
+    // 비관리자는 본인 고객사의 장비만 조회 가능
+    if (!isAdminSession(session) && String(session.customer_id ?? '') !== customerId) {
+      return res.status(403).json({
+        success: false,
+        data: [],
+        message: '본인 고객사의 장비만 조회할 수 있습니다.',
       })
     }
 

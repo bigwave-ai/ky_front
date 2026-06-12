@@ -1,5 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcrypt'
+import { requireAdminSession } from '../../../app/services/util/api-auth'
 
 /*
  * 01. 구분     : API
@@ -45,8 +47,6 @@ const formatPhone = (value: string) => {
   return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`
 }
 
-const encodeBase64 = (raw: string) => Buffer.from(raw, 'utf-8').toString('base64')
-
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<EditCustomerResponseType>,
@@ -58,6 +58,10 @@ export default async function handler(
       message: `Method ${req.method} Not Allowed`,
     })
   }
+
+  // 관리자 세션 검증: 비로그인/비관리자 요청 차단
+  const session = await requireAdminSession(req, res)
+  if (!session) return
 
   try {
     const body = req.body as EditCustomerRequestType
@@ -158,7 +162,7 @@ export default async function handler(
     }
 
     if (hasAnyNewPassword && newPassword) {
-      updateData.CUSTOMER_PASSWORD = encodeBase64(newPassword)
+      updateData.CUSTOMER_PASSWORD = await bcrypt.hash(newPassword, 10)
     }
 
     await prisma.tB_CUSTOMER.update({

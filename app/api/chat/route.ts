@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getRouteSession } from '../../services/util/api-auth'
 
 const getBackendUrl = () => {
   const baseUrl =
@@ -15,6 +16,12 @@ const getBackendUrl = () => {
 }
 
 export async function POST(request: NextRequest) {
+  // 세션 검증: 로그인 사용자만 백엔드 프록시 호출 가능
+  const session = await getRouteSession(request)
+  if (!session) {
+    return NextResponse.json({ success: false, message: '로그인이 필요합니다.' }, { status: 401 })
+  }
+
   try {
     const body = await request.json()
     const backendUrl = getBackendUrl()

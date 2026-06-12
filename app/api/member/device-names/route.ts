@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Prisma, PrismaClient } from '@prisma/client'
+import { getRouteSession, getScopedCustomerId } from '../../../services/util/api-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -31,6 +32,12 @@ const toFallbackName = (deviceId: string, deviceNum?: string | null, serialNo?: 
 }
 
 export async function POST(request: NextRequest) {
+  // 세션 검증: 로그인 사용자만 조회 가능
+  const session = await getRouteSession(request)
+  if (!session) {
+    return NextResponse.json({ success: false, data: {}, message: '로그인이 필요합니다.' }, { status: 401 })
+  }
+
   try {
     const body = (await request.json()) as RequestBodyType
     const inputIds = Array.isArray(body?.device_ids) ? body.device_ids : []
@@ -39,7 +46,24 @@ export async function POST(request: NextRequest) {
       new Set(inputIds.map((v) => String(v ?? '').trim()).filter(Boolean)),
     )
 
-    const deviceIds = normalizedIds.filter((id) => UUID_REGEX.test(id))
+    let deviceIds = normalizedIds.filter((id) => UUID_REGEX.test(id))
+
+    // 소유권 스코프: 비관리자는 본인 고객사 소유 장비로만 조회 범위를 좁힌다 (IDOR 방지).
+    const scopedCustomerId = getScopedCustomerId(session)
+    if (scopedCustomerId !== null && deviceIds.length > 0) {
+      if (!scopedCustomerId) {
+        return NextResponse.json(
+          { success: false, data: {}, message: '세션에 고객사 정보가 없습니다. 다시 로그인해주세요.' },
+          { status: 403 },
+        )
+      }
+      const owned = await prisma.tB_DEVICE.findMany({
+        where: { DEVICE_ID: { in: deviceIds }, CUSTOMER_ID: scopedCustomerId },
+        select: { DEVICE_ID: true },
+      })
+      const ownedSet = new Set(owned.map((d) => d.DEVICE_ID))
+      deviceIds = deviceIds.filter((id) => ownedSet.has(id))
+    }
 
     if (deviceIds.length === 0) {
       const emptyResponse: ResponseType = { success: true, data: {} }

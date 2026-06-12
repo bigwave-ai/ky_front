@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { PrismaClient } from '@prisma/client'
+import { requireAdminSession } from '../../../app/services/util/api-auth'
 
 type ReqBody = {
   customerId?: string
@@ -33,6 +34,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     res.setHeader('Allow', ['POST'])
     return res.status(405).json({ success: false, message: `Method ${req.method} Not Allowed` })
   }
+
+  // 관리자 세션 검증: 비로그인/비관리자 요청 차단
+  const session = await requireAdminSession(req, res)
+  if (!session) return
 
   try {
     const body = req.body as ReqBody

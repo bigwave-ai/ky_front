@@ -1,6 +1,7 @@
 /* c:\Users\USER\Desktop\bigwave\케이와이\program\kyfront_2026_03_23\app\api\simulate\predict\route.ts */
 import { NextRequest, NextResponse } from 'next/server'
 import { getPythonUrl, PYTHON_CONFIG } from '@/config/environment'
+import { canAccessDevice, getRouteSession } from '@/app/services/util/api-auth'
 
 /*
  * 01. 구분     : API Route (App Router)
@@ -23,6 +24,12 @@ const readJsonSafe = async (response: Response): Promise<any | null> => {
 }
 
 export async function POST(request: NextRequest) {
+  // 세션 검증: 로그인 사용자만 실행 가능
+  const session = await getRouteSession(request)
+  if (!session) {
+    return NextResponse.json({ success: false, message: '로그인이 필요합니다.' }, { status: 401 })
+  }
+
   try {
     const body = await request.json()
 
@@ -44,6 +51,12 @@ export async function POST(request: NextRequest) {
         { success: false, message: 'device_id가 필요합니다.' },
         { status: 400 },
       )
+    }
+
+    // 소유권 검증: 비관리자는 본인 고객사 장비만 사용 가능 (IDOR 방지)
+    const access = await canAccessDevice(session, deviceId)
+    if (!access.ok) {
+      return NextResponse.json({ success: false, message: access.message }, { status: access.status })
     }
 
     if (!Number.isInteger(lookbackHours) || lookbackHours < 1 || lookbackHours > 744) {
