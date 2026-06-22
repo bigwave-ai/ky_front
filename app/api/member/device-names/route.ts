@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
         SELECT EXISTS (
           SELECT 1
           FROM information_schema.columns
-          WHERE lower(table_name) = lower('TB_DEVICE')
+          WHERE lower(table_name) = lower('TB_DEVICE_V2')
             AND lower(column_name) = lower('DEVICE_NAME')
         ) AS "exists"
       `
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
         const rows = await prisma.$queryRaw<Array<{ DEVICE_ID: string; DEVICE_NAME: string | null }>>(
           Prisma.sql`
             SELECT "DEVICE_ID", "DEVICE_NAME"
-            FROM "TB_DEVICE"
+            FROM "TB_DEVICE_V2"
             WHERE "DEVICE_ID" IN (${Prisma.join(castedIds)})
           `,
         )
