@@ -33,6 +33,12 @@ export const PYTHON_CONFIG = {
     // 상세 모니터링 대시보드 조회
     MONITOR_DASHBOARD: (deviceId: string) =>
       normalizeEndpointPath(`${PYTHON_API_PREFIX}/api/monitor/dashboard/${deviceId}`),
+
+    // ESG 보고서 생성 (xlsx 바이너리)
+    ESG_REPORT: normalizeEndpointPath(`${PYTHON_API_PREFIX}/api/esg/report`),
+
+    // ESG 보고서용 고객사 목록
+    ESG_CUSTOMERS: normalizeEndpointPath(`${PYTHON_API_PREFIX}/api/esg/customers`),
   },
 } as const
 

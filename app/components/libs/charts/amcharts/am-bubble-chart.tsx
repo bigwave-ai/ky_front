@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import * as am4core from '@amcharts/amcharts4/core';
 import * as am4charts from '@amcharts/amcharts4/charts';
+import { useTranslation } from '@/app/services/i18n/LanguageProvider';
 
 /*
  * 01. 구분     : Library
@@ -27,6 +28,7 @@ const AmBubbleChart = ({
   height = '300px',
 }: AmBubbleChartProps) => {
   const chartRef = useRef<HTMLDivElement>(null);
+  const { t, lang } = useTranslation();
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -46,14 +48,14 @@ const AmBubbleChart = ({
     xAxis.dataFields.category = 'categoryX';
     xAxis.renderer.grid.template.disabled = false;
     xAxis.renderer.labels.template.fontSize = fontSize;
-    xAxis.title.text = 'X 축 (Category)';
+    xAxis.title.text = t('X 축 (Category)');
 
     // ✅ Y축 설정 (범주형)
     let yAxis = chart.yAxes.push(new am4charts.CategoryAxis());
     yAxis.dataFields.category = 'categoryY';
     yAxis.renderer.grid.template.disabled = false;
     yAxis.renderer.labels.template.fontSize = fontSize;
-    yAxis.title.text = 'Y 축 (Category)';
+    yAxis.title.text = t('Y 축 (Category)');
 
     // ✅ 버블 시리즈 (XYSeries)
     let series = chart.series.push(new am4charts.XYSeries());
@@ -100,7 +102,7 @@ const AmBubbleChart = ({
     return () => {
       chart.dispose();
     };
-  }, [data, fontSize]);
+  }, [data, fontSize, lang]);
 
   return <div ref={chartRef} style={{ width, height }} />;
 };

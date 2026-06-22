@@ -5,6 +5,7 @@ import { RecoilRoot } from 'recoil';
 import { Provider as JotaiProvider } from 'jotai';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import useQueryError from '../services/hooks/user-query-error';
+import { LanguageProvider } from '../services/i18n/LanguageProvider';
 
 /*
  * 01. 구분     : View 컴포넌트
@@ -61,8 +62,10 @@ export default function App({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <RecoilRoot>
         <JotaiProvider>
-          <RootLayout>{children}</RootLayout>        
-        </JotaiProvider>        
+          <LanguageProvider>
+            <RootLayout>{children}</RootLayout>
+          </LanguageProvider>
+        </JotaiProvider>
       </RecoilRoot>
     </QueryClientProvider>
   );

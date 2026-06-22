@@ -1,5 +1,6 @@
 import modalDialog from '@/app/components/libs/modals/modal-dialog';
 import { EnumDialogBtns } from '@/app/models/enums/enum-lib-group';
+import { useTranslation } from '@/app/services/i18n/LanguageProvider';
 import { AxiosError, isAxiosError } from 'axios';
 import { useCallback } from 'react';
 
@@ -17,6 +18,7 @@ interface UseQueryErrorProps {
  */
 
 const useQueryError = (): UseQueryErrorProps => {
+  const { t } = useTranslation();
   const fnQueryError = useCallback((error: any) => {
     const axiosError: AxiosError = error;
     const response = error.response;
@@ -25,8 +27,8 @@ const useQueryError = (): UseQueryErrorProps => {
     switch (status) {
       case 401:
         modalDialog({
-          dialogTitle: '알림',
-          dialogContent: '인증이 필요합니다. 로그인 페이지로 이동 합니다.',
+          dialogTitle: t('알림'),
+          dialogContent: t('인증이 필요합니다. 로그인 페이지로 이동 합니다.'),
           dialogBtns: [
             {
               btnId: EnumDialogBtns.BTN_CONFIRM_ID,
@@ -40,8 +42,8 @@ const useQueryError = (): UseQueryErrorProps => {
         break;
       case 403:
         modalDialog({
-          dialogTitle: '알림',
-          dialogContent: '전급 권한이 없습니다.',
+          dialogTitle: t('알림'),
+          dialogContent: t('전급 권한이 없습니다.'),
           dialogBtns: [
             {
               btnId: EnumDialogBtns.BTN_CONFIRM_ID,
@@ -52,7 +54,7 @@ const useQueryError = (): UseQueryErrorProps => {
         break;
       case 500:
         modalDialog({
-          dialogTitle: '알림',
+          dialogTitle: t('알림'),
           dialogContent: msg,
           dialogBtns: [
             {
@@ -64,7 +66,7 @@ const useQueryError = (): UseQueryErrorProps => {
         break;
       default:
         modalDialog({
-          dialogTitle: '알림',
+          dialogTitle: t('알림'),
           dialogContent: msg,
           dialogBtns: [
             {
@@ -74,7 +76,7 @@ const useQueryError = (): UseQueryErrorProps => {
           ],
         });
     }
-  }, []);
+  }, [t]);
   return { fnQueryError };
 };
 

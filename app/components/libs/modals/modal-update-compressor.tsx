@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import * as S from '@/app/components/style/styleds/libs/modals/styled-modal-update-compressor';
 import WarningModal from '@/app/components/libs/modals/modal-warnning';
 import type { CompressorSelectOptionType } from './modal-add-compressor';
+import { useTranslation } from '@/app/services/i18n/LanguageProvider';
 
 export type UpdateCompressorInitialDataType = {
   deviceId: string;
@@ -81,6 +82,7 @@ export default function UpdateCompressorModal({
   isSubmitting = false,
   isDeleting = false,
 }: UpdateCompressorModalProps) {
+  const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
   const [form, setForm] = useState<UpdateCompressorFormType>(INITIAL_FORM);
   const [errors, setErrors] = useState<UpdateCompressorErrorsType>({});
@@ -116,7 +118,7 @@ export default function UpdateCompressorModal({
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       const lines = Object.values(nextErrors).filter(Boolean) as string[];
-      openWarning('입력값 오류', `아래 항목을 확인해주세요.\n\n${lines.map((m) => `• ${m}`).join('\n')}`);
+      openWarning(t('입력값 오류'), `${t('아래 항목을 확인해주세요.')}\n\n${lines.map((m) => `• ${t(m)}`).join('\n')}`);
       return;
     }
 
@@ -128,7 +130,7 @@ export default function UpdateCompressorModal({
         }),
       );
     } catch (e: any) {
-      openWarning('컴프레셔 수정 실패', e?.message ?? '컴프레셔 수정 중 오류가 발생했습니다.');
+      openWarning(t('컴프레셔 수정 실패'), e?.message ?? t('컴프레셔 수정 중 오류가 발생했습니다.'));
     }
   };
 
@@ -139,7 +141,7 @@ export default function UpdateCompressorModal({
     try {
       await Promise.resolve(onDelete(form.deviceId));
     } catch (e: any) {
-      openWarning('컴프레셔 삭제 실패', e?.message ?? '컴프레셔 삭제 중 오류가 발생했습니다.');
+      openWarning(t('컴프레셔 삭제 실패'), e?.message ?? t('컴프레셔 삭제 중 오류가 발생했습니다.'));
     }
   };
 
@@ -171,113 +173,113 @@ export default function UpdateCompressorModal({
       <S.Overlay onClick={isBusy ? undefined : onClose} />
       <S.ModalWrap role="dialog" aria-modal="true" aria-labelledby="update-compressor-title">
         <S.ModalHead>
-          <S.HeadBadge>AI Agent 기반</S.HeadBadge>
-          <S.HeadTitle>컴프레셔 현황 관리 시스템</S.HeadTitle>
-          <S.CloseButton type="button" onClick={onClose} aria-label="닫기">×</S.CloseButton>
+          <S.HeadBadge>{t('AI Agent 기반')}</S.HeadBadge>
+          <S.HeadTitle>{t('컴프레셔 현황 관리 시스템')}</S.HeadTitle>
+          <S.CloseButton type="button" onClick={onClose} aria-label={t('닫기')}>×</S.CloseButton>
         </S.ModalHead>
 
         <S.ModalBody>
-          <S.BodyTitle id="update-compressor-title">컴프레셔 장비 정보변경</S.BodyTitle>
-          <S.BodyDescription>변경할 컴프레셔 장비 정보를 입력해주세요.</S.BodyDescription>
+          <S.BodyTitle id="update-compressor-title">{t('컴프레셔 장비 정보변경')}</S.BodyTitle>
+          <S.BodyDescription>{t('변경할 컴프레셔 장비 정보를 입력해주세요.')}</S.BodyDescription>
 
           <S.Form>
             <S.Field>
-              <S.Label>시리얼 번호</S.Label>
+              <S.Label>{t('시리얼 번호')}</S.Label>
               <S.Input
                 value={form.serialNumber}
                 onChange={(e) => handleChange('serialNumber', e.target.value)}
                 $error={Boolean(errors.serialNumber)}
                 inputMode="numeric"
               />
-              {errors.serialNumber && <S.ErrorText>{errors.serialNumber}</S.ErrorText>}
+              {errors.serialNumber && <S.ErrorText>{t(errors.serialNumber)}</S.ErrorText>}
             </S.Field>
 
             <S.Field>
-              <S.Label>장비 명</S.Label>
+              <S.Label>{t('장비 명')}</S.Label>
               <S.Input
                 value={form.deviceName}
                 onChange={(e) => handleChange('deviceName', e.target.value)}
                 $error={Boolean(errors.deviceName)}
               />
-              {errors.deviceName && <S.ErrorText>{errors.deviceName}</S.ErrorText>}
+              {errors.deviceName && <S.ErrorText>{t(errors.deviceName)}</S.ErrorText>}
             </S.Field>
 
             <S.Field>
-              <S.Label>장비 타입</S.Label>
+              <S.Label>{t('장비 타입')}</S.Label>
               <S.Select
                 value={form.deviceTypeCode}
                 onChange={(e) => handleChange('deviceTypeCode', e.target.value)}
                 $error={Boolean(errors.deviceTypeCode)}
               >
-                <option value="">장비 타입을 선택해주세요.</option>
+                <option value="">{t('장비 타입을 선택해주세요.')}</option>
                 {deviceTypeOptions.map((op) => (
                   <option key={op.code} value={op.code}>{op.name}</option>
                 ))}
               </S.Select>
-              {errors.deviceTypeCode && <S.ErrorText>{errors.deviceTypeCode}</S.ErrorText>}
+              {errors.deviceTypeCode && <S.ErrorText>{t(errors.deviceTypeCode)}</S.ErrorText>}
             </S.Field>
 
             <S.Field>
-              <S.Label>데이터 타입</S.Label>
+              <S.Label>{t('데이터 타입')}</S.Label>
               <S.Select
                 value={form.dataTypeCode}
                 onChange={(e) => handleChange('dataTypeCode', e.target.value)}
                 $error={Boolean(errors.dataTypeCode)}
               >
-                <option value="">데이터 타입을 선택해주세요.</option>
+                <option value="">{t('데이터 타입을 선택해주세요.')}</option>
                 {dataTypeOptions.map((op) => (
                   <option key={op.code} value={op.code}>{op.name}</option>
                 ))}
               </S.Select>
-              {errors.dataTypeCode && <S.ErrorText>{errors.dataTypeCode}</S.ErrorText>}
+              {errors.dataTypeCode && <S.ErrorText>{t(errors.dataTypeCode)}</S.ErrorText>}
             </S.Field>
 
             <S.Field>
-              <S.Label>장비 마력</S.Label>
+              <S.Label>{t('장비 마력')}</S.Label>
               <S.Input
                 value={form.equipmentPower}
                 onChange={(e) => handleChange('equipmentPower', e.target.value)}
                 $error={Boolean(errors.equipmentPower)}
                 inputMode="decimal"
               />
-              {errors.equipmentPower && <S.ErrorText>{errors.equipmentPower}</S.ErrorText>}
+              {errors.equipmentPower && <S.ErrorText>{t(errors.equipmentPower)}</S.ErrorText>}
             </S.Field>
 
             <S.Field>
-              <S.Label>장비 번호</S.Label>
+              <S.Label>{t('장비 번호')}</S.Label>
               <S.Input
                 value={form.equipmentNumber}
                 onChange={(e) => handleChange('equipmentNumber', e.target.value)}
                 $error={Boolean(errors.equipmentNumber)}
                 inputMode="numeric"
               />
-              {errors.equipmentNumber && <S.ErrorText>{errors.equipmentNumber}</S.ErrorText>}
+              {errors.equipmentNumber && <S.ErrorText>{t(errors.equipmentNumber)}</S.ErrorText>}
             </S.Field>
           </S.Form>
         </S.ModalBody>
 
         <S.ModalFooter>
           <S.DeleteButton type="button" onClick={() => setDeleteConfirmOpen(true)} disabled={isBusy}>
-            삭제
+            {t('삭제')}
           </S.DeleteButton>
 
           <S.FooterRightActions>
             <S.ConfirmButton type="button" onClick={handleSubmit} disabled={isBusy}>
-              확인
+              {t('확인')}
             </S.ConfirmButton>
             <S.CancelButton type="button" onClick={onClose} disabled={isBusy}>
-              취소
+              {t('취소')}
             </S.CancelButton>
           </S.FooterRightActions>
         </S.ModalFooter>
 
-        {hasError && <S.ErrorSummary>입력값을 다시 확인해주세요.</S.ErrorSummary>}
+        {hasError && <S.ErrorSummary>{t('입력값을 다시 확인해주세요.')}</S.ErrorSummary>}
       </S.ModalWrap>
 
       <WarningModal
         open={deleteConfirmOpen}
-        title="삭제 확인"
-        detail="정말로 삭제하시겠습니까?"
+        title={t('삭제 확인')}
+        detail={t('정말로 삭제하시겠습니까?')}
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteConfirmOpen(false)}
         showCancel

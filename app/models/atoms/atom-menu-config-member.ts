@@ -41,6 +41,13 @@ export const SideMenuConfigMember: SideMenuSectionConfigType[] = [
         isOpen: false,
         isButton: false,
       },
+      {
+        menuId: 'member-esg-report',
+        menuNm: 'ESG 보고서',
+        path: '/EsgReport',
+        isOpen: false,
+        isButton: false,
+      },
     ],
   },
 ]

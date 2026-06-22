@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import * as S from '@/app/components/style/styleds/libs/modals/styled-modal-add-user';
 import WarningModal from '@/app/components/libs/modals/modal-warnning';
+import { useTranslation } from '@/app/services/i18n/LanguageProvider';
 
 /*
  * 01. 구분     : Library
@@ -57,34 +58,37 @@ const formatPhone = (value: string) => {
   return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
 };
 
-const requiredMessage = (label: string) => `*${label}가 입력이 되지 않았습니다.`;
+type Translate = (text: string) => string;
 
-const validateForm = (form: AddCompanyFormType): AddCompanyErrorsType => {
+const requiredMessage = (t: Translate, label: string) =>
+  `*${label}${t('가 입력이 되지 않았습니다.')}`;
+
+const validateForm = (form: AddCompanyFormType, t: Translate): AddCompanyErrorsType => {
   const errors: AddCompanyErrorsType = {};
 
-  if (!form.accountId.trim()) errors.accountId = requiredMessage('아이디');
-  if (!form.password.trim()) errors.password = requiredMessage('비밀번호');
-  if (!form.passwordConfirm.trim()) errors.passwordConfirm = requiredMessage('비밀번호 재입력');
-  if (!form.companyName.trim()) errors.companyName = requiredMessage('고객사');
-  if (!form.businessType.trim()) errors.businessType = requiredMessage('업종');
-  if (!form.handlingItem.trim()) errors.handlingItem = requiredMessage('취급품목');
-  if (!form.managerName.trim()) errors.managerName = requiredMessage('담당자 명');
-  if (!form.managerPhone.trim()) errors.managerPhone = requiredMessage('담당자 연락처');
-  if (!form.managerEmail.trim()) errors.managerEmail = requiredMessage('담당자 이메일');
+  if (!form.accountId.trim()) errors.accountId = requiredMessage(t, t('아이디'));
+  if (!form.password.trim()) errors.password = requiredMessage(t, t('비밀번호'));
+  if (!form.passwordConfirm.trim()) errors.passwordConfirm = requiredMessage(t, t('비밀번호 재입력'));
+  if (!form.companyName.trim()) errors.companyName = requiredMessage(t, t('고객사'));
+  if (!form.businessType.trim()) errors.businessType = requiredMessage(t, t('업종'));
+  if (!form.handlingItem.trim()) errors.handlingItem = requiredMessage(t, t('취급품목'));
+  if (!form.managerName.trim()) errors.managerName = requiredMessage(t, t('담당자 명'));
+  if (!form.managerPhone.trim()) errors.managerPhone = requiredMessage(t, t('담당자 연락처'));
+  if (!form.managerEmail.trim()) errors.managerEmail = requiredMessage(t, t('담당자 이메일'));
 
   if (!errors.password && !errors.passwordConfirm && form.password !== form.passwordConfirm) {
-    errors.passwordConfirm = '*비밀번호와 비밀번호 재입력이 일치하지 않습니다.';
+    errors.passwordConfirm = t('*비밀번호와 비밀번호 재입력이 일치하지 않습니다.');
   }
 
   if (!errors.managerPhone) {
     const phoneDigits = onlyNumber(form.managerPhone);
     if (phoneDigits.length !== 11) {
-      errors.managerPhone = '*담당자 연락처는 11자리 숫자를 입력해주세요.';
+      errors.managerPhone = t('*담당자 연락처는 11자리 숫자를 입력해주세요.');
     }
   }
 
   if (!errors.managerEmail && !EMAIL_REGEX.test(form.managerEmail.trim())) {
-    errors.managerEmail = '*담당자 이메일 형식이 올바르지 않습니다. (@ 포함)';
+    errors.managerEmail = t('*담당자 이메일 형식이 올바르지 않습니다. (@ 포함)');
   }
 
   return errors;
@@ -92,6 +96,7 @@ const validateForm = (form: AddCompanyFormType): AddCompanyErrorsType => {
 
 export default function AddModal({ open, onClose, onSubmit }: AddModalProps) {
   /******************** 변수 영역 ********************/
+  const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
   const [form, setForm] = useState<AddCompanyFormType>(INITIAL_FORM);
   const [errors, setErrors] = useState<AddCompanyErrorsType>({});
@@ -118,12 +123,12 @@ export default function AddModal({ open, onClose, onSubmit }: AddModalProps) {
   };
 
   const handleSubmit = async () => {
-    const nextErrors = validateForm(form);
+    const nextErrors = validateForm(form, t);
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       const lines = Object.values(nextErrors).filter(Boolean) as string[];
-      openWarning('입력값 오류', `아래 항목을 확인해주세요.\n\n${lines.map((m) => `• ${m}`).join('\n')}`);
+      openWarning(t('입력값 오류'), `${t('아래 항목을 확인해주세요.')}\n\n${lines.map((m) => `• ${m}`).join('\n')}`);
       return;
     }
 
@@ -144,8 +149,8 @@ export default function AddModal({ open, onClose, onSubmit }: AddModalProps) {
       );
     } catch (e: any) {
       openWarning(
-        '고객사 추가 실패',
-        e?.message ?? '고객사 추가 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+        t('고객사 추가 실패'),
+        e?.message ?? t('고객사 추가 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'),
       );
     }
   };
@@ -180,116 +185,116 @@ export default function AddModal({ open, onClose, onSubmit }: AddModalProps) {
       <S.Overlay onClick={onClose} />
       <S.ModalWrap role="dialog" aria-modal="true" aria-labelledby="add-company-title">
         <S.ModalHead>
-          <S.HeadBadge>AI Agent 기반</S.HeadBadge>
-          <S.HeadTitle>컴프레셔 현황 관리 시스템</S.HeadTitle>
-          <S.CloseButton type="button" onClick={onClose} aria-label="닫기">
+          <S.HeadBadge>{t('AI Agent 기반')}</S.HeadBadge>
+          <S.HeadTitle>{t('컴프레셔 현황 관리 시스템')}</S.HeadTitle>
+          <S.CloseButton type="button" onClick={onClose} aria-label={t('닫기')}>
             ×
           </S.CloseButton>
         </S.ModalHead>
 
         <S.ModalBody>
-          <S.BodyTitle id="add-company-title">고객사 추가하기</S.BodyTitle>
-          <S.BodyDescription>추가하고자 하는 고객사의 정보를 입력해주세요.</S.BodyDescription>
+          <S.BodyTitle id="add-company-title">{t('고객사 추가하기')}</S.BodyTitle>
+          <S.BodyDescription>{t('추가하고자 하는 고객사의 정보를 입력해주세요.')}</S.BodyDescription>
 
           <S.Form>
             <S.Field>
-              <S.Label>아이디</S.Label>
+              <S.Label>{t('아이디')}</S.Label>
               <S.Input
                 value={form.accountId}
                 onChange={(e) => handleChange('accountId', e.target.value)}
                 $error={Boolean(errors.accountId)}
-                placeholder="아이디를 입력해주세요."
+                placeholder={t('아이디를 입력해주세요.')}
               />
               {errors.accountId && <S.ErrorText>{errors.accountId}</S.ErrorText>}
             </S.Field>
 
             <S.Field>
-              <S.Label>비밀번호</S.Label>
+              <S.Label>{t('비밀번호')}</S.Label>
               <S.Input
                 type="password"
                 value={form.password}
                 onChange={(e) => handleChange('password', e.target.value)}
                 $error={Boolean(errors.password)}
-                placeholder="비밀번호를 입력해주세요."
+                placeholder={t('비밀번호를 입력해주세요.')}
               />
               {errors.password && <S.ErrorText>{errors.password}</S.ErrorText>}
             </S.Field>
 
             <S.Field>
-              <S.Label>비밀번호 재입력</S.Label>
+              <S.Label>{t('비밀번호 재입력')}</S.Label>
               <S.Input
                 type="password"
                 value={form.passwordConfirm}
                 onChange={(e) => handleChange('passwordConfirm', e.target.value)}
                 $error={Boolean(errors.passwordConfirm)}
-                placeholder="비밀번호를 다시 입력해주세요."
+                placeholder={t('비밀번호를 다시 입력해주세요.')}
               />
               {errors.passwordConfirm && <S.ErrorText>{errors.passwordConfirm}</S.ErrorText>}
             </S.Field>
 
             <S.Field>
-              <S.Label>고객사</S.Label>
+              <S.Label>{t('고객사')}</S.Label>
               <S.Input
                 value={form.companyName}
                 onChange={(e) => handleChange('companyName', e.target.value)}
                 $error={Boolean(errors.companyName)}
-                placeholder="기업/기관 명을 입력해주세요."
+                placeholder={t('기업/기관 명을 입력해주세요.')}
               />
               {errors.companyName && <S.ErrorText>{errors.companyName}</S.ErrorText>}
             </S.Field>
 
             <S.Field>
-              <S.Label>업종</S.Label>
+              <S.Label>{t('업종')}</S.Label>
               <S.Input
                 value={form.businessType}
                 onChange={(e) => handleChange('businessType', e.target.value)}
                 $error={Boolean(errors.businessType)}
-                placeholder="기업/기관의 업종을 입력해주세요."
+                placeholder={t('기업/기관의 업종을 입력해주세요.')}
               />
               {errors.businessType && <S.ErrorText>{errors.businessType}</S.ErrorText>}
             </S.Field>
 
             <S.Field>
-              <S.Label>취급품목</S.Label>
+              <S.Label>{t('취급품목')}</S.Label>
               <S.Input
                 value={form.handlingItem}
                 onChange={(e) => handleChange('handlingItem', e.target.value)}
                 $error={Boolean(errors.handlingItem)}
-                placeholder="취급 품목을 입력해주세요."
+                placeholder={t('취급 품목을 입력해주세요.')}
               />
               {errors.handlingItem && <S.ErrorText>{errors.handlingItem}</S.ErrorText>}
             </S.Field>
 
             <S.Field>
-              <S.Label>담당자 명</S.Label>
+              <S.Label>{t('담당자 명')}</S.Label>
               <S.Input
                 value={form.managerName}
                 onChange={(e) => handleChange('managerName', e.target.value)}
                 $error={Boolean(errors.managerName)}
-                placeholder="담당자 명을 입력해주세요."
+                placeholder={t('담당자 명을 입력해주세요.')}
               />
               {errors.managerName && <S.ErrorText>{errors.managerName}</S.ErrorText>}
             </S.Field>
 
             <S.Field>
-              <S.Label>담당자 연락처</S.Label>
+              <S.Label>{t('담당자 연락처')}</S.Label>
               <S.Input
                 value={form.managerPhone}
                 onChange={(e) => handleChange('managerPhone', e.target.value)}
                 $error={Boolean(errors.managerPhone)}
-                placeholder="'-'을 제외하고 입력해주세요."
+                placeholder={t("'-'을 제외하고 입력해주세요.")}
                 inputMode="numeric"
               />
               {errors.managerPhone && <S.ErrorText>{errors.managerPhone}</S.ErrorText>}
             </S.Field>
 
             <S.Field>
-              <S.Label>담당자 이메일</S.Label>
+              <S.Label>{t('담당자 이메일')}</S.Label>
               <S.Input
                 value={form.managerEmail}
                 onChange={(e) => handleChange('managerEmail', e.target.value)}
                 $error={Boolean(errors.managerEmail)}
-                placeholder="담당자 이메일을 입력해주세요."
+                placeholder={t('담당자 이메일을 입력해주세요.')}
               />
               {errors.managerEmail && <S.ErrorText>{errors.managerEmail}</S.ErrorText>}
             </S.Field>
@@ -298,11 +303,11 @@ export default function AddModal({ open, onClose, onSubmit }: AddModalProps) {
 
         <S.ModalFooter>
           <S.SubmitButton type="button" onClick={handleSubmit}>
-            추가하기
+            {t('추가하기')}
           </S.SubmitButton>
         </S.ModalFooter>
 
-        {hasError && <S.ErrorSummary>입력값을 다시 확인해주세요.</S.ErrorSummary>}
+        {hasError && <S.ErrorSummary>{t('입력값을 다시 확인해주세요.')}</S.ErrorSummary>}
       </S.ModalWrap>
 
       <WarningModal

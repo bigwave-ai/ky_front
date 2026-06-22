@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import * as am4core from '@amcharts/amcharts4/core';
 import * as am4charts from '@amcharts/amcharts4/charts';
+import { useTranslation } from '@/app/services/i18n/LanguageProvider';
 
 /*
  * 01. 구분     : Library
@@ -29,6 +30,7 @@ const AmScatterChart = ({
   height = '300px',
 }: AmScatterChartProps) => {
   const chartRef = useRef<HTMLDivElement>(null);
+  const { t, lang } = useTranslation();
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -42,12 +44,12 @@ const AmScatterChart = ({
 
     // ✅ X축 설정
     let xAxis = chart.xAxes.push(new am4charts.ValueAxis());
-    xAxis.title.text = "X 값";
+    xAxis.title.text = t("X 값");
     xAxis.renderer.labels.template.fontSize = fontSize;
 
     // ✅ Y축 설정
     let yAxis = chart.yAxes.push(new am4charts.ValueAxis());
-    yAxis.title.text = "Y 값";
+    yAxis.title.text = t("Y 값");
     yAxis.renderer.labels.template.fontSize = fontSize;
 
     // ✅ 산점도 시리즈 설정
@@ -78,7 +80,7 @@ const AmScatterChart = ({
     return () => {
       chart.dispose();
     };
-  }, [data, pointColor, fontSize]);
+  }, [data, pointColor, fontSize, lang]);
 
   return <div ref={chartRef} style={{ width, height }} />;
 };

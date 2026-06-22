@@ -296,6 +296,66 @@
   border-bottom: 1px solid #dbe4ef;
 }
 
+/* 정렬 가능한 헤더 (라벨 + 오름/내림차순 세모 버튼) */
+.user_thInner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.user_sortBtns {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 3px;
+  line-height: 0;
+}
+
+.user_sortBtn {
+  border: 0;
+  background: transparent;
+  padding: 2px 4px;
+  margin: 0;
+  min-width: 20px;
+  min-height: 14px;
+  display: grid;
+  place-items: center;
+  line-height: 0;
+  cursor: pointer;
+  color: #c2ccdb;
+  transition: color 0.15s ease;
+}
+
+.user_sortBtn:not(.user_sortBtnActive):hover {
+  color: #8a99ad;
+}
+
+.user_sortBtn:focus-visible {
+  outline: 2px solid #375aff;
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+
+.user_sortBtnActive {
+  color: #375aff;
+}
+
+.user_sortCaret {
+  display: block;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+}
+
+.user_sortCaretUp {
+  border-bottom: 6px solid currentColor;
+}
+
+.user_sortCaretDown {
+  border-top: 6px solid currentColor;
+}
+
 .user_table td {
   color: #2b2b2b;
   font-size: 16px;

@@ -4,6 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import { serialize } from "cookie";
 import bcrypt from "bcrypt";
 import { jwtToken } from "../../../app/services/util/jwt";
+import { plantCodeForCustomer } from "../../../app/services/util/plant-code";
 
 /*
  * 01. 구분     : API
@@ -48,6 +49,7 @@ if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 const normalizeRole = (auth: string): string => {
   const value = auth.trim().toLowerCase();
   if (value.includes("admin") || value.includes("관리")) return "admin";
+  // 비관리자는 'member' — RAG 챗봇 연동 규약(FRONTEND_INTEGRATION.md): role "admin"|"member".
   return "member";
 };
 
@@ -177,6 +179,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       status: "활성",
     };
 
+    // RAG 챗봇 권한 스코프용 plant_code(fems_cloud PLANT_CD) — customer_id에서 역산.
+    // member는 이 값으로 본인 사업장만 조회됨. admin/미매핑(예: admin 계정)은 null.
+    const plant_code = plantCodeForCustomer(String(customer.CUSTOMER_ID ?? ""));
+
     // ── JWT 페이로드 구성 및 발급 ──────────────────────────────────
     const tokenPayload = {
       customer_id: customer.CUSTOMER_ID,
@@ -185,6 +191,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       email: safeUser.email,
       contact: safeUser.contact,
       role: safeUser.role,
+      plant_code, // RAG 챗봇 연동(FRONTEND_INTEGRATION.md): member 권한 스코프 키
       status: safeUser.status,
       auth: customer.CUSTOMER_AUTH,
     };

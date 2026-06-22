@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRouteSession } from '../../services/util/api-auth'
+import { getRouteSession, SESSION_COOKIE } from '../../services/util/api-auth'
 
+/**
+ * 챗 BFF 프록시 (RAG 챗봇 연동 — FRONTEND_INTEGRATION.md).
+ * RAG 서버 주소는 NEXT_PUBLIC_API_URL, 경로는 RAG_CHAT_PATH(기본 /rag/generate/)로 설정.
+ * 권한(role/plant_code)은 세션 JWT(Authorization: Bearer)에 실어 보내고 RAG가 검증·스코프한다.
+ */
 const getBackendUrl = () => {
   const baseUrl =
     process.env.NEXT_PUBLIC_API_URL ||
@@ -12,43 +17,46 @@ const getBackendUrl = () => {
     throw new Error('Backend URL not configured in environment variables')
   }
 
-  return `${baseUrl}/python-api/rag/generate`
+  const path = process.env.RAG_CHAT_PATH || '/rag/generate/'
+  return `${baseUrl.replace(/\/+$/, '')}${path}`
 }
 
 export async function POST(request: NextRequest) {
-  // 세션 검증: 로그인 사용자만 백엔드 프록시 호출 가능
-  const session = await getRouteSession(request)
-  if (!session) {
-    return NextResponse.json({ success: false, message: '로그인이 필요합니다.' }, { status: 401 })
-  }
-
   try {
-    const body = await request.json()
-    const backendUrl = getBackendUrl()
+    // 로그인 세션(JWT 쿠키) 필수. 권한 스코프(role/plant_code)는 RAG가 이 JWT를 검증해 읽는다.
+    const session = await getRouteSession(request).catch(() => null)
+    if (!session) {
+      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
+    }
 
+    const body = await request.json()
+    // 세션 JWT를 Authorization: Bearer 로 전달(role/plant_code/customer_id 클레임 포함).
+    // 본문은 question/stream/messages/limit/session_id 그대로 통과(권한값은 body로 보내지 않는다).
+    const token = request.cookies.get(SESSION_COOKIE)?.value
+
+    const backendUrl = getBackendUrl()
     const response = await fetch(backendUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(request.headers.get('authorization') && {
-          Authorization: request.headers.get('authorization')!,
-        }),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify(body),
     })
 
     if (!response.ok) {
-      throw new Error(`Backend responded with status: ${response.status}`)
+      const detail = await response.text().catch(() => '')
+      return NextResponse.json(
+        { error: 'Backend error', status: response.status, details: detail.slice(0, 500) },
+        { status: 502 },
+      )
     }
 
-    if (body.stream && response.body) {
+    // 스트림 요청이면 그대로 통과(백엔드가 단일 JSON을 줘도 프론트의 parseStreamingJSON 이 처리).
+    if (body?.stream && response.body) {
       return new NextResponse(response.body, {
         status: response.status,
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-        },
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
       })
     }
 

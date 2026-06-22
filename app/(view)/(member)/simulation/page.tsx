@@ -11,6 +11,7 @@ import CommonHorizontalBar, {
   type CommonHorizontalBarItemType,
 } from '@/app/components/libs/charts/common/common-horizontal-bar'
 import { withAppPrefix } from '@/config/environment'
+import { useTranslation } from '@/app/services/i18n/LanguageProvider'
 
 /*
  * 01. 구분     : Page 컴포넌트
@@ -52,10 +53,14 @@ type DiffDirectionType = 'increase' | 'decrease' | 'flat'
 
 type SimulationSummaryType = {
   line15Prefix: string
-  line15Value: string
+  line15Pct: string
+  line15Status: string
+  line15Kw: string
   line15Direction: DiffDirectionType
   line30Prefix: string
-  line30Value: string
+  line30Pct: string
+  line30Status: string
+  line30Kw: string
   line30Direction: DiffDirectionType
 }
 
@@ -480,14 +485,14 @@ const buildSimulationResult = (
 
   const summary: SimulationSummaryType = {
     line15Prefix: '15분 예측값이 기준 대비',
-    line15Value: ` ${Math.abs(pct15).toFixed(2)}% ${
-      pct15 >= 0 ? '증가' : pct15 < 0 ? '감소' : '유지'
-    } (${signedKw(diff15)})`,
+    line15Pct: Math.abs(pct15).toFixed(2),
+    line15Status: pct15 >= 0 ? '증가' : pct15 < 0 ? '감소' : '유지',
+    line15Kw: signedKw(diff15),
     line15Direction: getDiffDirection(diff15),
     line30Prefix: '30분 예측값이 기준 대비',
-    line30Value: ` ${Math.abs(pct30).toFixed(2)}% ${
-      pct30 >= 0 ? '증가' : pct30 < 0 ? '감소' : '유지'
-    } (${signedKw(diff30)})`,
+    line30Pct: Math.abs(pct30).toFixed(2),
+    line30Status: pct30 >= 0 ? '증가' : pct30 < 0 ? '감소' : '유지',
+    line30Kw: signedKw(diff30),
     line30Direction: getDiffDirection(diff30),
   }
 
@@ -528,6 +533,8 @@ const buildSimulationResult = (
 
 export default function SimulationPage() {
   /******************** 변수 영역 ********************/
+  const { t } = useTranslation()
+
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
 
   const [equipment, setEquipment] = useState('')
@@ -556,6 +563,7 @@ export default function SimulationPage() {
   const [customerOptions, setCustomerOptions] = useState<AdminCustomerOptionType[]>([])
   const [selectedCustomerId, setSelectedCustomerId] = useState('')
   const [customerKeyword, setCustomerKeyword] = useState('')
+  const [isCustomerSearching, setIsCustomerSearching] = useState(false) // 사용자가 직접 검색어를 입력 중인지 여부
   const [isCustomerListLoading, setIsCustomerListLoading] = useState(false)
   const [customerListError, setCustomerListError] = useState<string | null>(null)
   const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false)
@@ -574,7 +582,9 @@ export default function SimulationPage() {
 
   const filteredCustomerOptions = useMemo(() => {
     const keyword = customerKeyword.trim().toLowerCase()
-    const filtered = keyword
+    // 사용자가 직접 검색어를 입력 중일 때만 필터링한다.
+    // 고객사를 선택해 input에 이름이 채워진 상태에서는 전체 목록을 보여준다.
+    const filtered = keyword && isCustomerSearching
       ? customerOptions.filter((item) => item.name.toLowerCase().includes(keyword))
       : customerOptions
 
@@ -583,7 +593,7 @@ export default function SimulationPage() {
 
     const selected = customerOptions.find((item) => item.id === selectedCustomerId)
     return selected ? [selected, ...filtered] : filtered
-  }, [customerKeyword, customerOptions, selectedCustomerId])
+  }, [customerKeyword, customerOptions, selectedCustomerId, isCustomerSearching])
 
   const selectedEquipmentName = useMemo(
     () => deviceOptions.find((d) => d.deviceId === equipment)?.deviceName ?? '-',
@@ -666,6 +676,7 @@ export default function SimulationPage() {
   const handleCustomerKeywordChange = (value: string) => {
     setCustomerKeyword(value)
     setIsCustomerDropdownOpen(true)
+    setIsCustomerSearching(true) // 사용자가 직접 입력 → 검색 모드
 
     const trimmed = value.trim()
     const exact = customerOptions.find((item) => item.name === trimmed)
@@ -682,6 +693,7 @@ export default function SimulationPage() {
   // 관리자 고객사 선택
   const handleCustomerSelect = (item: AdminCustomerOptionType) => {
     setCustomerKeyword(item.name)
+    setIsCustomerSearching(false) // 선택 완료 → 검색 모드 해제(다음 열람 시 전체 목록)
     if (selectedCustomerId !== item.id) {
       setSelectedCustomerId(item.id)
     }
@@ -701,7 +713,7 @@ export default function SimulationPage() {
       })
 
       if (!loaded.conditionRows.length) {
-        openWarn('조회 결과 없음', '조정 가능한 항목이 없습니다.')
+        openWarn(t('조회 결과 없음'), t('조정 가능한 항목이 없습니다.'))
       }
 
       setQueryHour(normalizedHour)
@@ -718,8 +730,8 @@ export default function SimulationPage() {
     } catch (error: any) {
       console.error(error)
       openWarn(
-        '불러오기 실패',
-        error?.message ?? '초기 조건 불러오기 중 오류가 발생했습니다.',
+        t('불러오기 실패'),
+        error?.message ? t(error.message) : t('초기 조건 불러오기 중 오류가 발생했습니다.'),
       )
     } finally {
       setIsFetchingInitial(false)
@@ -744,13 +756,18 @@ export default function SimulationPage() {
       })
 
       const simulationResult = buildSimulationResult(predict, selectedEquipmentName, changedKeys)
-      setResultData(simulationResult)
+      const localizedResult: SimulationResultType = {
+        ...simulationResult,
+        bars: simulationResult.bars.map((bar) => ({ ...bar, label: t(bar.label) })),
+        impacts: simulationResult.impacts.map((impact) => ({ ...impact, label: t(impact.label) })),
+      }
+      setResultData(localizedResult)
       setStep(4)
     } catch (error: any) {
       console.error(error)
       openWarn(
-        'Simulation 실패',
-        error?.message ?? '시뮬레이션 실행 중 오류가 발생했습니다.',
+        t('Simulation 실패'),
+        error?.message ? t(error.message) : t('시뮬레이션 실행 중 오류가 발생했습니다.'),
       )
       setStep(2)
     } finally {
@@ -808,7 +825,7 @@ export default function SimulationPage() {
         if (!disposed) {
           setCustomerOptions([])
           setSelectedCustomerId('')
-          setCustomerListError(error?.message ?? '고객사 목록 조회 중 오류가 발생했습니다.')
+          setCustomerListError(error?.message ? t(error.message) : t('고객사 목록 조회 중 오류가 발생했습니다.'))
         }
       } finally {
         if (!disposed) {
@@ -872,7 +889,7 @@ export default function SimulationPage() {
           console.error(error)
           setDeviceOptions([])
           setEquipment('')
-          openWarn('장비 조회 실패', error?.message ?? '장비 목록을 불러오지 못했습니다.')
+          openWarn(t('장비 조회 실패'), error?.message ? t(error.message) : t('장비 목록을 불러오지 못했습니다.'))
         }
       } finally {
         if (!disposed) {
@@ -894,22 +911,26 @@ export default function SimulationPage() {
       <header className={`${mmc.simulation_pageHead} ${mmc.simulation_stageFadeUp}`}>
         <div className={mmc.simulation_pageHeadTop}>
           <div className={mmc.simulation_pageHeadText}>
-            <h1>설비 영향 분석 시뮬레이션</h1>
-            <p>실시간 컴프레서 운영 상태 및 30분 예측 결과를 확인할 수 있습니다.</p>
+            <h1>{t('설비 영향 분석 시뮬레이션')}</h1>
+            <p>{t('실시간 컴프레서 운영 상태 및 30분 예측 결과를 확인할 수 있습니다.')}</p>
           </div>
 
           {isAdminUser && (
             <div className={mmc.simulation_customerSelectBox}>
-              <strong className={mmc.simulation_customerSelectTitle}>고객사 선택</strong>
+              <strong className={mmc.simulation_customerSelectTitle}>{t('고객사 선택')}</strong>
 
               <div className={mmc.simulation_customerSelectControls}>
                 <div className={mmc.simulation_customerCombo} ref={customerComboRef}>
                   <input
                     type="text"
                     className={mmc.simulation_customerSearchInput}
-                    placeholder="고객사 검색 후 선택"
+                    placeholder={t('고객사 검색 후 선택')}
                     value={customerKeyword}
-                    onFocus={() => setIsCustomerDropdownOpen(true)}
+                    onFocus={(e) => {
+                      setIsCustomerDropdownOpen(true)
+                      setIsCustomerSearching(false) // 열람 시작 → 전체 목록 표시
+                      e.currentTarget.select() // 이름 전체 선택: 바로 타이핑하면 새 검색
+                    }}
                     onChange={(e) => handleCustomerKeywordChange(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Escape') {
@@ -929,7 +950,7 @@ export default function SimulationPage() {
                     className={mmc.simulation_customerComboArrow}
                     onClick={() => setIsCustomerDropdownOpen((prev) => !prev)}
                     disabled={isCustomerListLoading}
-                    aria-label="고객사 목록 열기"
+                    aria-label={t('고객사 목록 열기')}
                   >
                     ▾
                   </button>
@@ -951,7 +972,7 @@ export default function SimulationPage() {
                           </button>
                         ))
                       ) : (
-                        <div className={mmc.simulation_customerDropdownEmpty}>검색 결과가 없습니다.</div>
+                        <div className={mmc.simulation_customerDropdownEmpty}>{t('검색 결과가 없습니다.')}</div>
                       )}
                     </div>
                   )}
@@ -970,15 +991,15 @@ export default function SimulationPage() {
       <>
       <section className={`${mmc.simulation_selectCard} ${mmc.simulation_stageFadeUp}`}>
         <div className={mmc.simulation_selectTitleWrap}>
-          <h2>설비 선택/입력</h2>
-          <p>설비 영향도 분석을 위해 설비 및 조회시간을 선택/입력해주세요.</p>
+          <h2>{t('설비 선택/입력')}</h2>
+          <p>{t('설비 영향도 분석을 위해 설비 및 조회시간을 선택/입력해주세요.')}</p>
         </div>
 
         <div className={mmc.simulation_selectControls}>
           <div className={`${mmc.simulation_field} ${mmc.simulation_field_equipment}`}>
             <div className={mmc.simulation_fieldTop}>
-              <span className={mmc.simulation_fieldLabel}>장비 명</span>
-              <span className={mmc.simulation_fieldHint}>권한 내 장비만 선택 가능</span>
+              <span className={mmc.simulation_fieldLabel}>{t('장비 명')}</span>
+              <span className={mmc.simulation_fieldHint}>{t('권한 내 장비만 선택 가능')}</span>
             </div>
 
             <select
@@ -993,9 +1014,9 @@ export default function SimulationPage() {
               }
             >
               {isAdminUser && !selectedCustomerId ? (
-                <option value="">고객사를 먼저 선택해주세요.</option>
+                <option value="">{t('고객사를 먼저 선택해주세요.')}</option>
               ) : isLoadingEquipment ? (
-                <option value="">장비 목록 로딩중..</option>
+                <option value="">{t('장비 목록 로딩중..')}</option>
               ) : deviceOptions.length ? (
                 deviceOptions.map((device) => (
                   <option key={device.deviceId} value={device.deviceId}>
@@ -1003,15 +1024,15 @@ export default function SimulationPage() {
                   </option>
                 ))
               ) : (
-                <option value="">등록된 장비가 없습니다.</option>
+                <option value="">{t('등록된 장비가 없습니다.')}</option>
               )}
             </select>
           </div>
 
           <div className={`${mmc.simulation_field} ${mmc.simulation_field_time}`}>
             <div className={mmc.simulation_fieldTop}>
-              <span className={mmc.simulation_fieldLabel}>조회 시간</span>
-              <span className={mmc.simulation_fieldHint}>최대 744, 최소 1</span>
+              <span className={mmc.simulation_fieldLabel}>{t('조회 시간')}</span>
+              <span className={mmc.simulation_fieldHint}>{t('최대 744, 최소 1')}</span>
             </div>
 
             <input
@@ -1045,7 +1066,7 @@ export default function SimulationPage() {
               (isAdminUser && !selectedCustomerId)
             }
           >
-            {isFetchingInitial ? '불러오는 중..' : '불러오기'}
+            {isFetchingInitial ? t('불러오는 중..') : t('불러오기')}
           </button>
         </div>
       </section>
@@ -1056,17 +1077,17 @@ export default function SimulationPage() {
             className={`${mmc.simulation_card} ${mmc.simulation_conditionCard} ${mmc.simulation_stageFadeUp}`}
           >
             <div className={`${mmc.simulation_cardHead} ${mmc.simulation_conditionHead}`}>
-              <h3>분석 조건 설정</h3>
-              <p>*초기에는 장비별 기준값으로 설정됩니다.</p>
+              <h3>{t('분석 조건 설정')}</h3>
+              <p>{t('*초기에는 장비별 기준값으로 설정됩니다.')}</p>
             </div>
 
             <p className={mmc.simulation_conditionInfo}>
-              컴프레서의 입력 운전 조건을 입력하여 최적화 결과 시뮬레이션을 진행합니다.
+              {t('컴프레서의 입력 운전 조건을 입력하여 최적화 결과 시뮬레이션을 진행합니다.')}
             </p>
 
             <div className={mmc.simulation_conditionTableHead}>
-              <span>특성명</span>
-              <span>설정 값</span>
+              <span>{t('특성명')}</span>
+              <span>{t('설정 값')}</span>
             </div>
 
             <div className={mmc.simulation_conditionRows}>
@@ -1077,7 +1098,7 @@ export default function SimulationPage() {
 
                   return (
                     <div key={row.key} className={mmc.simulation_conditionRow}>
-                      <div className={mmc.simulation_conditionName}>{row.label}</div>
+                      <div className={mmc.simulation_conditionName}>{t(row.label)}</div>
 
                       <div className={mmc.simulation_sliderBox}>
                         <div className={mmc.simulation_sliderMeta}>
@@ -1114,7 +1135,7 @@ export default function SimulationPage() {
                 })
               ) : (
                 <div className={mmc.simulation_conditionRow}>
-                  <div className={mmc.simulation_conditionName}>조정 가능한 항목이 없습니다.</div>
+                  <div className={mmc.simulation_conditionName}>{t('조정 가능한 항목이 없습니다.')}</div>
                 </div>
               )}
             </div>
@@ -1134,34 +1155,34 @@ export default function SimulationPage() {
               className={`${mmc.simulation_card} ${mmc.simulation_resultCard} ${mmc.simulation_stageFadeUpDelayed}`}
             >
               <div className={`${mmc.simulation_cardHead} ${mmc.simulation_resultHead}`}>
-                <h3>시뮬레이션 결과</h3>
-                <p>*15분과 30분 단위의 전력 사용량 예측값에 대한 결과를 제공합니다.</p>
+                <h3>{t('시뮬레이션 결과')}</h3>
+                <p>{t('*15분과 30분 단위의 전력 사용량 예측값에 대한 결과를 제공합니다.')}</p>
               </div>
 
               <p className={mmc.simulation_resultIntro}>
-                기준값과 대비하는 시뮬레이션 결과에 대한 분석 결과를 종합적으로 제공합니다.
+                {t('기준값과 대비하는 시뮬레이션 결과에 대한 분석 결과를 종합적으로 제공합니다.')}
               </p>
 
               <div className={mmc.simulation_resultLayout}>
                 <div className={mmc.simulation_resultLeft}>
                   <div className={mmc.simulation_summaryBox}>
-                    <strong className={mmc.simulation_summaryTitle}>*시뮬레이션 요약</strong>
+                    <strong className={mmc.simulation_summaryTitle}>{t('*시뮬레이션 요약')}</strong>
                     <p className={mmc.simulation_summaryText}>
-                      {currentResult.summary.line15Prefix}
+                      {t(currentResult.summary.line15Prefix)}
                       <span className={getSummaryClassName(currentResult.summary.line15Direction)}>
-                        {currentResult.summary.line15Value}
+                        {` ${currentResult.summary.line15Pct}% ${t(currentResult.summary.line15Status)} (${currentResult.summary.line15Kw})`}
                       </span>
                     </p>
                     <p className={mmc.simulation_summaryText}>
-                      {currentResult.summary.line30Prefix}
+                      {t(currentResult.summary.line30Prefix)}
                       <span className={getSummaryClassName(currentResult.summary.line30Direction)}>
-                        {currentResult.summary.line30Value}
+                        {` ${currentResult.summary.line30Pct}% ${t(currentResult.summary.line30Status)} (${currentResult.summary.line30Kw})`}
                       </span>
                     </p>
                   </div>
 
                   <div className={mmc.simulation_resultListCard}>
-                    <h4>기준 예측결과</h4>
+                    <h4>{t('기준 예측결과')}</h4>
                     {currentResult.baseResult.map((row) => (
                       <div
                         key={`base-${row.label}`}
@@ -1171,7 +1192,7 @@ export default function SimulationPage() {
                       >
                         <span className={mmc.simulation_resultLabel}>
                           <i className={mmc.simulation_resultDot} aria-hidden="true" />
-                          {row.label}
+                          {t(row.label)}
                         </span>
                         <strong>{row.value}</strong>
                       </div>
@@ -1179,7 +1200,7 @@ export default function SimulationPage() {
                   </div>
 
                   <div className={mmc.simulation_resultListCard}>
-                    <h4>시뮬레이션 결과</h4>
+                    <h4>{t('시뮬레이션 결과')}</h4>
                     {currentResult.simulationResult.map((row) => (
                       <div
                         key={`sim-${row.label}`}
@@ -1189,7 +1210,7 @@ export default function SimulationPage() {
                       >
                         <span className={mmc.simulation_resultLabel}>
                           <i className={mmc.simulation_resultDot} aria-hidden="true" />
-                          {row.label}
+                          {t(row.label)}
                         </span>
                         <strong>{row.value}</strong>
                       </div>
@@ -1199,7 +1220,7 @@ export default function SimulationPage() {
 
                 <div className={mmc.simulation_resultRight}>
                   <div className={mmc.simulation_chartBox}>
-                    <h4 className={mmc.simulation_chartTitle}>기준 vs 시뮬레이션 결과 비교</h4>
+                    <h4 className={mmc.simulation_chartTitle}>{t('기준 vs 시뮬레이션 결과 비교')}</h4>
                     <CommonBarChart
                       bars={currentResult.bars}
                       yAxisTicks={currentResult.yAxisTicks}
@@ -1208,12 +1229,12 @@ export default function SimulationPage() {
                   </div>
 
                   <div className={mmc.simulation_impactBox}>
-                    <h4>입력 영향도 분석</h4>
+                    <h4>{t('입력 영향도 분석')}</h4>
                     {currentResult.impacts.length ? (
                       <CommonHorizontalBar items={currentResult.impacts} />
                     ) : (
                       <p className={mmc.simulation_impactEmpty}>
-                        입력값 변경이 없어 영향도 분석 결과가 없습니다.
+                        {t('입력값 변경이 없어 영향도 분석 결과가 없습니다.')}
                       </p>
                     )}
                   </div>
@@ -1229,10 +1250,10 @@ export default function SimulationPage() {
         open={isRunning || isFetchingInitial}
         message={
           isFetchingInitial
-            ? '초기 조건을 불러오는 중입니다.'
-            : '시뮬레이션 분석을 실행중입니다.'
+            ? t('초기 조건을 불러오는 중입니다.')
+            : t('시뮬레이션 분석을 실행중입니다.')
         }
-        subMessage="잠시만 기다려주세요."
+        subMessage={t('잠시만 기다려주세요.')}
       />
 
       <WarningModal

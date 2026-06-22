@@ -6,7 +6,9 @@ import { useAtomValue } from 'jotai'
 
 import HeaderAdminBreadcrumb from '../../libs/header/header-breadcrumb'
 import HeaderUserModal from '../../libs/header/header-user-modal'
+import HeaderLanguageToggle from '../../libs/header/header-language-toggle'
 import mmc from '../../style/resources/css/member.module.css'
+import { useTranslation } from '@/app/services/i18n/LanguageProvider'
 import { userInfoAtom } from '@/app/models/atoms/atom-user-info'
 import { SideMenuConfigAdmin } from '@/app/models/atoms/atom-menu-config'
 import { SideMenuConfigMember } from '@/app/models/atoms/atom-menu-config-member'
@@ -53,6 +55,7 @@ export default function LayoutMemberHeader({
   onOpenMenu,
 }: Props) {
   /******************** 변수 영역 ********************/
+  const { t, lang } = useTranslation()
   const pathname = usePathname() ?? '/'
   const session = useAtomValue(userInfoAtom)
 
@@ -94,8 +97,8 @@ export default function LayoutMemberHeader({
   )
 
   const breadcrumb = useMemo(
-    () => (headerTitle ? [headerTitle] : []),
-    [headerTitle],
+    () => (headerTitle ? [t(headerTitle)] : []),
+    [headerTitle, t],
   )
 
   useEffect(() => {
@@ -111,7 +114,7 @@ export default function LayoutMemberHeader({
   }, [session?.name, session?.user_id])
 
   const displayName = useMemo(() => {
-    if (!isMounted) return '\u00A0'
+    if (!isMounted) return ' '
 
     const rawName =
       (session?.name ?? '').trim() ||
@@ -121,10 +124,10 @@ export default function LayoutMemberHeader({
       return rawName.endsWith('님') ? rawName.slice(0, -1) : rawName
     }
 
-    return lastUserNameRef.current || '\u00A0'
+    return lastUserNameRef.current || ' '
   }, [isMounted, session?.name, session?.user_id])
 
-  const hasUserName = displayName !== '\u00A0'
+  const hasUserName = displayName !== ' '
 
   /******************** 수행 영역 ********************/
   return (
@@ -135,7 +138,7 @@ export default function LayoutMemberHeader({
             type="button"
             className={mmc.header_menu_btn}
             onClick={onOpenMenu}
-            aria-label="사이드바 열기"
+            aria-label={t('사이드바 열기')}
           >
             <span className={mmc.header_menu_icon} aria-hidden="true">
               <i />
@@ -149,12 +152,26 @@ export default function LayoutMemberHeader({
       </div>
 
       <div className={mmc.header_right}>
-        <span className={mmc.header_username}>
-          {hasUserName ? `${displayName}님` : '\u00A0'}
-        </span>
-        <span className={mmc.header_text}>
-          {hasUserName ? '안녕하세요' : '\u00A0'}
-        </span>
+        <HeaderLanguageToggle />
+        {lang === 'en' ? (
+          <>
+            <span className={mmc.header_text}>
+              {hasUserName ? t('안녕하세요') : ' '}
+            </span>
+            <span className={mmc.header_username}>
+              {hasUserName ? displayName : ' '}
+            </span>
+          </>
+        ) : (
+          <>
+            <span className={mmc.header_username}>
+              {hasUserName ? `${displayName}님` : ' '}
+            </span>
+            <span className={mmc.header_text}>
+              {hasUserName ? '안녕하세요' : ' '}
+            </span>
+          </>
+        )}
         <HeaderUserModal />
       </div>
     </div>

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import * as am4core from '@amcharts/amcharts4/core';
 import * as am4charts from '@amcharts/amcharts4/charts';
+import { useTranslation } from '@/app/services/i18n/LanguageProvider';
 
 /*
  * 01. 구분     : Library
@@ -32,6 +33,7 @@ const AmTimeSeriesChart = ({
 }: AmTimeSeriesChartProps) => {
 
   /******************** 변수 영역 ********************/
+  const { t, lang } = useTranslation();
   const chartRef = useRef<HTMLDivElement>(null);
 
   /******************** 함수 영역 ********************/
@@ -71,7 +73,7 @@ const AmTimeSeriesChart = ({
     series.strokeWidth = 2;
     series.stroke = am4core.color(lineColor);
     series.tooltipText = "{date.formatDate('yyyy-MM-dd HH:mm')}: [bold]{valueY}[/]"; // ✅ 툴팁 형식 개선
-    series.name = "데이터 값"; // ✅ 범례 표시 이름 추가
+    series.name = t("데이터 값"); // ✅ 범례 표시 이름 추가
 
     // ✅ 마커(데이터 점) 추가
     let bullet = series.bullets.push(new am4charts.CircleBullet());
@@ -104,7 +106,7 @@ const AmTimeSeriesChart = ({
     return () => {
       chart.dispose();
     };
-  }, [data, lineColor, fontSize, showLabels]);
+  }, [data, lineColor, fontSize, showLabels, t, lang]);
 
   return <div ref={chartRef} style={{ width: width, height: height }} />;
 };

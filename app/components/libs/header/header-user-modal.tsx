@@ -6,6 +6,7 @@ import { useSetAtom } from 'jotai'
 
 import * as S from '../../style/styleds/libs/header/styled-header-user-modal'
 import imag from '../../style/resources/css/image.module.css'
+import { useTranslation } from '@/app/services/i18n/LanguageProvider'
 import { userInfoAtom } from '@/app/models/atoms/atom-user-info'
 
 /*
@@ -19,6 +20,7 @@ import { userInfoAtom } from '@/app/models/atoms/atom-user-info'
 
 const HeaderUserModal = () => {
   /******************** 변수 영역 ********************/
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
@@ -77,7 +79,7 @@ const HeaderUserModal = () => {
     <S.UserWrapper ref={wrapperRef}>
       <button
         type="button"
-        aria-label="사용자 메뉴 열기"
+        aria-label={t('사용자 메뉴 열기')}
         onClick={() => setOpen((prev) => !prev)}
         style={{
           border: 'none',
@@ -98,7 +100,7 @@ const HeaderUserModal = () => {
         <S.Modal>
           <S.ModalItem onClick={handleLogout} disabled={isLoggingOut}>
             <S.Icon className={imag.logout_icon} />
-            <S.Text>{isLoggingOut ? '로그아웃 중...' : '로그아웃'}</S.Text>
+            <S.Text>{isLoggingOut ? t('로그아웃 중...') : t('로그아웃')}</S.Text>
           </S.ModalItem>
         </S.Modal>
       )}

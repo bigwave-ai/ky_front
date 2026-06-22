@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import cbc from './Chatbot.module.css'
 import imag from '@/app/components/style/resources/css/image.module.css'
+import { useTranslation } from '@/app/services/i18n/LanguageProvider'
 
 /*
  * 01. 구분     : Page 컴포넌트
@@ -453,12 +454,7 @@ const setStoredMessages = (sessionId: string, messages: ChatMessageType[]) => {
   sessionStorage.setItem(`${CHAT_HISTORY_KEY_PREFIX}${sessionId}`, JSON.stringify(messages))
 }
 
-// 직접 백엔드 호출 URL을 반환하는 함수
-const getApiUrl = () => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL
-  if (!baseUrl) throw new Error('API URL not configured')
-  return `${baseUrl}/python-api/rag/generate`
-}
+// (직접 백엔드 호출 제거: 모든 챗 요청은 동일 출처 BFF(/api/chat) 경유 → CORS·경로 문제 회피)
 
 // 스트리밍 문자열 버퍼에서 JSON 객체들을 분리 파싱하는 함수
 const parseStreamingJSON = (
@@ -525,37 +521,17 @@ const parseStreamingJSON = (
   return { objects, remaining }
 }
 
-// direct API 우선 호출 후 실패 시 /api/chat로 폴백하는 함수
+// 모든 챗 요청은 동일 출처 BFF(/api/chat)로 보낸다. (직접 호출은 CORS·경로 문제로 제거)
 const smartFetch = async (body: Record<string, unknown>) => {
-  const options: RequestInit = {
+  const response = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+  })
+  if (!response.ok) {
+    throw new Error(`Chat proxy failed: ${response.status}`)
   }
-
-  try {
-    const directUrl = getApiUrl()
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000)
-
-    try {
-      const response = await fetch(directUrl, { ...options, signal: controller.signal })
-      clearTimeout(timeoutId)
-      if (response.ok) return response
-      throw new Error(`Direct connection failed: ${response.status}`)
-    } catch (directError: any) {
-      clearTimeout(timeoutId)
-      const proxyResponse = await fetch('/api/chat', options)
-      if (proxyResponse.ok) return proxyResponse
-      throw new Error(
-        `Both direct/proxy failed. Direct: ${directError?.message ?? 'unknown'}, Proxy: ${proxyResponse.status}`,
-      )
-    }
-  } catch {
-    const proxyResponse = await fetch('/api/chat', options)
-    if (proxyResponse.ok) return proxyResponse
-    throw new Error(`Proxy connection failed: ${proxyResponse.status}`)
-  }
+  return response
 }
 
 // 채팅 메시지를 전송하고 스트리밍 응답을 반영해 이력을 저장하는 함수
@@ -678,6 +654,7 @@ const getLatestReferenceMessage = (messages: ChatMessageType[]) =>
 
 export default function ChatbotPage() {
   /******************** 변수 영역 ********************/
+  const { t } = useTranslation()
   const [sessionId] = useState(() => getOrCreateSessionId()) // 현재 채팅 세션 ID
   const [messages, setMessages] = useState<ChatMessageType[]>([]) // 채팅 메시지 배열
   const [chatInput, setChatInput] = useState('') // 입력창 문자열
@@ -761,7 +738,7 @@ export default function ChatbotPage() {
       if (latest && !activeReferenceMessageId) setActiveReferenceMessageId(latest.id)
     } else {
       setMessages((prev) => prev.filter((message) => message.id !== tempUserId && message.id !== tempBotId))
-      setError(response.message ?? '메시지 전송 중 오류가 발생했습니다.')
+      setError(response.message ?? t('메시지 전송 중 오류가 발생했습니다.'))
     }
 
     setIsLoading(false)
@@ -832,18 +809,18 @@ export default function ChatbotPage() {
   return (
     <div className={cbc.chatbot_root}>
       <header className={cbc.chatbot_pageHead}>
-        <h1>통합 AI 챗봇</h1>
-        <p>케이와이 통합 AI 챗봇 입니다. 무엇이든 물어보세요.</p>
+        <h1>{t('통합 AI 챗봇')}</h1>
+        <p>{t('케이와이 통합 AI 챗봇 입니다. 무엇이든 물어보세요.')}</p>
       </header>
 
       <section className={`${cbc.chatbot_frame} ${isReferencePanelOpen ? cbc.chatbot_frameWithRef : ''}`}>
         <article className={cbc.chat_panel}>
           <div className={cbc.chat_head}>
             <h2>AI Chat</h2>
-            <p>케이와이 AI Aent Chatbot 입니다.</p>
+            <p>{t('케이와이 AI Aent Chatbot 입니다.')}</p>
           </div>
 
-          <p className={cbc.chat_subTitle}>궁금하신 사항을 질의해주세요.</p>
+          <p className={cbc.chat_subTitle}>{t('궁금하신 사항을 질의해주세요.')}</p>
           <div className={cbc.chat_divider} />
 
           {error && <div className={cbc.chat_error}>{error}</div>}
@@ -885,7 +862,7 @@ export default function ChatbotPage() {
                           }`}
                           onClick={() => handleReferenceOpen(message)}
                         >
-                          참고문헌보기
+                          {t('참고문헌보기')}
                         </button>
                       )}
                     </div>
@@ -914,7 +891,7 @@ export default function ChatbotPage() {
             <input
               type="text"
               className={cbc.chat_input}
-              placeholder="질의를 입력해주세요."
+              placeholder={t('질의를 입력해주세요.')}
               value={chatInput}
               onChange={(event) => setChatInput(event.target.value)}
               onKeyDown={handleEnterSend}
@@ -925,7 +902,7 @@ export default function ChatbotPage() {
               className={cbc.chat_sendBtn}
               onClick={handleSendMessage}
               disabled={!chatInput.trim() || isLoading}
-              aria-label="전송"
+              aria-label={t('전송')}
             >
               <i className={imag.send_message_icon} aria-hidden="true" />
             </button>
@@ -936,14 +913,14 @@ export default function ChatbotPage() {
           <aside className={cbc.ref_panel}>
             <div className={cbc.ref_head}>
               <div className={cbc.ref_headLeft}>
-                <h3>참고 문헌</h3>
-                <p>아래 답변에 대한 참고 문헌 입니다.</p>
+                <h3>{t('참고 문헌')}</h3>
+                <p>{t('아래 답변에 대한 참고 문헌 입니다.')}</p>
               </div>
               <button
                 type="button"
                 className={cbc.ref_closeBtn}
                 onClick={handleReferenceClose}
-                aria-label="참고문헌 닫기"
+                aria-label={t('참고문헌 닫기')}
               >
                 ✕
               </button>
@@ -961,7 +938,7 @@ export default function ChatbotPage() {
                   className={cbc.ref_navBtn}
                   onClick={handlePrevImage}
                   disabled={currentImageIndex === 0 || !activeReferences.length}
-                  aria-label="이전 문서"
+                  aria-label={t('이전 문서')}
                 >
                   &lt;
                 </button>
@@ -1001,7 +978,7 @@ export default function ChatbotPage() {
                     }}
                     disabled={!activeReferences.length}
                   />
-                  <span className={cbc.ref_pageCount}>의 {activeReferences.length || 0}</span>
+                  <span className={cbc.ref_pageCount}>{t('의')} {activeReferences.length || 0}</span>
                 </div>
 
                 <button
@@ -1009,7 +986,7 @@ export default function ChatbotPage() {
                   className={cbc.ref_navBtn}
                   onClick={handleNextImage}
                   disabled={!activeReferences.length || currentImageIndex >= activeReferences.length - 1}
-                  aria-label="다음 문서"
+                  aria-label={t('다음 문서')}
                 >
                   &gt;
                 </button>
@@ -1017,7 +994,7 @@ export default function ChatbotPage() {
 
               {currentReference && (
                 <div className={cbc.ref_docMeta}>
-                  <span>{currentReference.title || currentReference.name || '참고문헌'}</span>
+                  <span>{currentReference.title || currentReference.name || t('참고문헌')}</span>
                   <span>{currentReference.page ? `page:${currentReference.page}` : ''}</span>
                 </div>
               )}
@@ -1035,16 +1012,16 @@ export default function ChatbotPage() {
                     />
                   ) : (
                     <div className={cbc.ref_empty}>
-                      <div className={cbc.ref_emptyTitle}>참고문헌 이미지를 불러오지 못했습니다.</div>
+                      <div className={cbc.ref_emptyTitle}>{t('참고문헌 이미지를 불러오지 못했습니다.')}</div>
                       <div className={cbc.ref_emptyMeta}>
-                        {currentReference.title || currentReference.name || '제목 없음'}
+                        {currentReference.title || currentReference.name || t('제목 없음')}
                         {currentReference.page ? ` / page:${currentReference.page}` : ''}
                       </div>
-                      <code className={cbc.ref_emptyUrl}>{currentReference.url || 'url 없음'}</code>
+                      <code className={cbc.ref_emptyUrl}>{currentReference.url || t('url 없음')}</code>
                     </div>
                   )
                 ) : (
-                  <div className={cbc.ref_empty}>참고 문헌이 없습니다.</div>
+                  <div className={cbc.ref_empty}>{t('참고 문헌이 없습니다.')}</div>
                 )}
               </div>
             </div>

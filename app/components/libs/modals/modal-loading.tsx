@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from '@/app/services/i18n/LanguageProvider';
 import {
   Overlay,
   ModalWrap,
@@ -18,9 +19,10 @@ export type LoadingModalProps = {
 
 export default function LoadingModal({
   open,
-  message = '불러오는 중입니다...',
+  message,
   subMessage,
 }: LoadingModalProps) {
+  const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -43,7 +45,7 @@ export default function LoadingModal({
       <Overlay />
       <ModalWrap role="dialog" aria-modal="true" aria-live="polite">
         <Spinner aria-hidden />
-        <Message>{message}</Message>
+        <Message>{message ?? t('불러오는 중입니다...')}</Message>
         {subMessage ? <SubMessage>{subMessage}</SubMessage> : null}
       </ModalWrap>
     </>

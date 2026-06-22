@@ -8,10 +8,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { base64Encode } from "@/app/services/util/base64";
 import { useSetAtom } from "jotai";
 import { userInfoAtom } from "@/app/models/atoms/atom-user-info";
+import { useTranslation } from "@/app/services/i18n/LanguageProvider";
 
 // 모달들
 import WarningModal from "@/app/components/libs/modals/modal-warnning";
 import LoadingModal from "@/app/components/libs/modals/modal-loading";
+import HeaderLanguageToggle from "@/app/components/libs/header/header-language-toggle";
 
 /*
  * 01. 구분     : Credential Component
@@ -40,6 +42,8 @@ type SignInResponse = {
 
 const CredentialProvider = () => {
   /******************** 변수 영역 ********************/
+  const { t } = useTranslation();
+
   const REMEMBER_ME_KEY = "autoSADSDD_rememberMe";
   const SAVED_ID_KEY = "autoSADSDD_savedId";
 
@@ -92,7 +96,7 @@ const CredentialProvider = () => {
     const password = formData.password.trim();
 
     if (!id || !password) {
-      openWarn("알림", "아이디와 비밀번호를 확인해주세요.");
+      openWarn(t("알림"), t("아이디와 비밀번호를 확인해주세요."));
       return;
     }
 
@@ -126,13 +130,13 @@ const CredentialProvider = () => {
 
       if (!response.ok || !result?.success || !result?.data) {
         if (response.status === 401) {
-          openWarn("로그인 실패", "아이디 또는 비밀번호가 잘못되었습니다.");
+          openWarn(t("로그인 실패"), t("아이디 또는 비밀번호가 잘못되었습니다."));
         } else if (response.status === 400) {
-          openWarn("입력 오류", result?.message ?? "입력값을 확인해주세요.");
+          openWarn(t("입력 오류"), result?.message ?? t("입력값을 확인해주세요."));
         } else if (response.status === 500) {
-          openWarn("서버 오류", "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+          openWarn(t("서버 오류"), t("서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요."));
         } else {
-          openWarn("실패", result?.message ?? "알 수 없는 오류가 발생했습니다.");
+          openWarn(t("실패"), result?.message ?? t("알 수 없는 오류가 발생했습니다."));
         }
         return;
       }
@@ -167,7 +171,7 @@ const CredentialProvider = () => {
       router.push(dest);
     } catch (error) {
       console.error("Error during sign-in:", error);
-      openWarn("오류", "로그인 처리 중 오류가 발생했습니다. 다시 시도해주세요.");
+      openWarn(t("오류"), t("로그인 처리 중 오류가 발생했습니다. 다시 시도해주세요."));
     } finally {
       setIsSubmitting(false);
     }
@@ -197,7 +201,7 @@ const CredentialProvider = () => {
   useEffect(() => {
     const error = searchParams?.get("error");
     if (error === "session_expired") {
-      openWarn("세션 만료", "세션이 만료되었습니다. 다시 로그인해주세요.");
+      openWarn(t("세션 만료"), t("세션이 만료되었습니다. 다시 로그인해주세요."));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
@@ -217,28 +221,32 @@ const CredentialProvider = () => {
 
   return (
     <div className={smc.auth_background}>
+      <div className={smc.signin_lang_toggle}>
+        <HeaderLanguageToggle />
+      </div>
+
       <LoadingModal
         open={isSubmitting}
-        message="로그인 중입니다..."
-        subMessage="잠시만 기다려 주세요."
+        message={t("로그인 중입니다...")}
+        subMessage={t("잠시만 기다려 주세요.")}
       />
 
       <div className={smc.signin_card}>
         <div className={smc.signin_card_head}>
-          <span className={smc.signin_head_badge}>AI Agent 기반</span>
-          <h1 className={smc.signin_head_title}>컴프레서 현황 관리 시스템</h1>
+          <span className={smc.signin_head_badge}>{t("AI Agent 기반")}</span>
+          <h1 className={smc.signin_head_title}>{t("컴프레서 현황 관리 시스템")}</h1>
         </div>
 
         <div className={smc.signin_card_body}>
-          <div className={smc.login_text}>로그인</div>
+          <div className={smc.login_text}>{t("로그인")}</div>
           <div className={smc.login_detail_text}>
-            로그인을 위해 아이디와 비밀번호를 입력해주세요.
+            {t("로그인을 위해 아이디와 비밀번호를 입력해주세요.")}
           </div>
 
-          <div className={smc.login_id_text}>아이디</div>
+          <div className={smc.login_id_text}>{t("아이디")}</div>
           <div className={smc.signin_input_wrap}>
             <MuiInputText2
-              placeholder="아이디를 입력해주세요."
+              placeholder={t("아이디를 입력해주세요.")}
               name="id"
               value={formData.id}
               width="100%"
@@ -251,10 +259,10 @@ const CredentialProvider = () => {
             />
           </div>
 
-          <div className={smc.login_pw_text}>비밀번호</div>
+          <div className={smc.login_pw_text}>{t("비밀번호")}</div>
           <div className={smc.signin_input_wrap}>
             <MuiInputText2
-              placeholder="비밀번호를 입력해주세요."
+              placeholder={t("비밀번호를 입력해주세요.")}
               name="password"
               type="password"
               value={formData.password}
@@ -278,7 +286,7 @@ const CredentialProvider = () => {
                 onChange={handleToggleRememberMe}
                 disabled={isSubmitting}
               />
-              <span className={smc.remember_label}>내 정보 기억하기</span>
+              <span className={smc.remember_label}>{t("내 정보 기억하기")}</span>
             </label>
           </div>
 
@@ -287,10 +295,10 @@ const CredentialProvider = () => {
               type="button"
               className={smc.signin_button}
               onClick={handleClickLoginButton}
-              aria-label="로그인"
+              aria-label={t("로그인")}
               disabled={isSubmitting}
             >
-              {isSubmitting ? "로그인 중..." : "로그인"}
+              {isSubmitting ? t("로그인 중...") : t("로그인")}
             </button>
           </div>
 

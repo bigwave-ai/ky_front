@@ -37,6 +37,9 @@ model TB_CUSTOMER {
   CUSTOMER_USER_ID     String?
   TB_DEVICE            TB_DEVICE[]
   TB_PEAK_DISPATCH_RUN TB_PEAK_DISPATCH_RUN[]
+
+  // v1->v2 전환: 모델명은 유지하되 물리 테이블만 V2로 매핑(프론트 쿼리 전부 무수정으로 v2 조회)
+  @@map("TB_CUSTOMER_V2")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -60,6 +63,9 @@ model TB_DEVICE {
   TB_SIMULATION_LOG              TB_SIMULATION_LOG[]
   TB_VIBRATION_LOG               TB_VIBRATION_LOG[]
   TB_WARN_ERROR_LOG              TB_WARN_ERROR_LOG[]
+
+  // v1->v2 전환: 물리 테이블만 V2로 매핑(DATA_TYPE/HORSE_POWER 타입은 v2를 v1과 동일하게 ALTER 완료)
+  @@map("TB_DEVICE_V2")
 }
 
 model TB_FLOW_LOG {
@@ -70,6 +76,9 @@ model TB_FLOW_LOG {
   TEMPERATURE Float?
   CUR_FLOW    Float?
   TB_DEVICE   TB_DEVICE @relation(fields: [DEVICE_ID], references: [DEVICE_ID], onDelete: NoAction, onUpdate: NoAction)
+
+  // v1->v2 전환: 물리 테이블만 V2로 매핑(컬럼 전부 동일 타입)
+  @@map("TB_FLOW_LOG_V2")
 }
 
 model TB_PEAK_DISPATCH_DEVICE_RESULT {
@@ -167,6 +176,9 @@ model TB_PEMS_PRO_LOG {
   CSUSAGETIME  Int?
   MGREFILLTIME Int?
   TB_DEVICE    TB_DEVICE @relation(fields: [DEVICE_ID], references: [DEVICE_ID], onDelete: NoAction, onUpdate: NoAction)
+
+  // v1->v2 전환: 물리 테이블만 V2로 매핑(컬럼 전부 동일 타입)
+  @@map("TB_PEMS_PRO_LOG_V2")
 }
 
 model TB_SIMULATION_LOG {

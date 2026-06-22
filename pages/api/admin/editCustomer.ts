@@ -77,31 +77,24 @@ export default async function handler(
     const newPassword = body.newPassword?.trim() ?? ''
     const newPasswordConfirm = body.newPasswordConfirm?.trim() ?? ''
 
-    if (
-      !customerId ||
-      !accountId ||
-      !companyName ||
-      !businessType ||
-      !handlingItem ||
-      !managerName ||
-      !managerPhoneRaw ||
-      !managerEmail
-    ) {
+    // 필수: 식별값(customerId/accountId)과 고객사명만. 나머지(업종/취급품목/담당자/연락처/이메일)는
+    // 일부 항목만 수정하는 경우를 허용하기 위해 선택값으로 둔다.
+    if (!customerId || !accountId || !companyName) {
       return res.status(400).json({
         success: false,
         message: '필수 입력값이 누락되었습니다.',
       })
     }
 
-    if (!EMAIL_REGEX.test(managerEmail)) {
+    // 이메일/연락처는 입력된 경우에만 형식 검증(빈 값 허용)
+    if (managerEmail && !EMAIL_REGEX.test(managerEmail)) {
       return res.status(400).json({
         success: false,
         message: '이메일 형식이 올바르지 않습니다.',
       })
     }
 
-    const phoneDigits = onlyDigits(managerPhoneRaw)
-    if (phoneDigits.length !== 11) {
+    if (managerPhoneRaw && onlyDigits(managerPhoneRaw).length !== 11) {
       return res.status(400).json({
         success: false,
         message: '연락처는 11자리 숫자를 입력해주세요.',

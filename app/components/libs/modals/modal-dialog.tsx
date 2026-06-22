@@ -2,6 +2,7 @@
 import { createRoot } from 'react-dom/client';
 import * as Smd from '../../style/styleds/libs/modals/styled-modal-dialog';
 import Draggable from 'react-draggable';
+import { translate } from '@/app/services/i18n/translate';
 
 /*
  * 01. 구분     : Library
@@ -39,7 +40,7 @@ export default function modalDialog({ dialogTitle, dialogContent, dialogBtns, ca
           dialogRoot.unmount();
         }}
       >
-        {val.btnNm}
+        {translate(val.btnNm)}
       </Smd.DialogButton>
     );
     arrBtns.push(dialogBtn);

@@ -7,6 +7,7 @@ import CommonDetailMonitoringTimeSeriesChart, {
   type DetailMonitoringPointType,
 } from '@/app/components/libs/charts/common/common-detail-monitoring-timeseries'
 import { withAppPrefix } from '@/config/environment'
+import { useTranslation } from '@/app/services/i18n/LanguageProvider'
 
 /*
  * 01. 구분     : Page 컴포넌트
@@ -370,6 +371,7 @@ const getDeltaValueClassName = (value: number, css: typeof dmc) =>
 
 export default function DetailMonitoringPage() {
   /******************** 변수 영역 ********************/
+  const { t } = useTranslation() // 다국어 변환 함수
   const [selectedCompressorId, setSelectedCompressorId] = useState(0) // 선택된 컴프레서 탭 ID
   const [selectedMetricKey, setSelectedMetricKey] = useState<MetricKeyType>('voltage') // 선택된 메트릭 키
   const [isDesktopCarousel, setIsDesktopCarousel] = useState(false) // 데스크톱 캐러셀 사용 여부
@@ -391,6 +393,7 @@ export default function DetailMonitoringPage() {
   const [customerOptions, setCustomerOptions] = useState<AdminCustomerOptionType[]>([]) // 관리자용 고객사 옵션
   const [selectedCustomerId, setSelectedCustomerId] = useState('') // 관리자 선택 고객사
   const [customerKeyword, setCustomerKeyword] = useState('') // 고객사 검색어
+  const [isCustomerSearching, setIsCustomerSearching] = useState(false) // 사용자가 직접 검색어를 입력 중인지 여부
   const [isCustomerListLoading, setIsCustomerListLoading] = useState(false) // 고객사 목록 로딩 여부
   const [customerListError, setCustomerListError] = useState<string | null>(null) // 고객사 목록 오류 메시지
 
@@ -412,7 +415,9 @@ export default function DetailMonitoringPage() {
     
   const filteredCustomerOptions = useMemo(() => {
     const keyword = customerKeyword.trim().toLowerCase()
-    const filtered = keyword
+    // 사용자가 직접 검색어를 입력 중일 때만 필터링한다.
+    // 고객사를 선택해 input에 이름이 채워진 상태에서는 전체 목록을 보여준다.
+    const filtered = keyword && isCustomerSearching
       ? customerOptions.filter((item) => item.name.toLowerCase().includes(keyword))
       : customerOptions
 
@@ -421,9 +426,9 @@ export default function DetailMonitoringPage() {
 
     const selected = customerOptions.find((item) => item.id === selectedCustomerId)
     return selected ? [selected, ...filtered] : filtered
-  }, [customerKeyword, customerOptions, selectedCustomerId]) // 검색 적용 고객사 목록
+  }, [customerKeyword, customerOptions, selectedCustomerId, isCustomerSearching]) // 검색 적용 고객사 목록
 
-  const emptyTabsMessage = '연결된 장비가 없습니다.' // 일반 사용자용 장비 없음 메시지
+  const emptyTabsMessage = t('연결된 장비가 없습니다.') // 일반 사용자용 장비 없음 메시지
 
   const selectedTab = useMemo(
     () => tabs.find((tab) => tab.id === selectedCompressorId) ?? tabs[0] ?? null,
@@ -452,13 +457,14 @@ export default function DetailMonitoringPage() {
   const activeSeries = selectedDashboard ? selectedDashboard.series[selectedMetricKey] : null // 선택 메트릭 차트 데이터
   const instantPowerMetric = selectedDashboard ? selectedDashboard.metrics.instantPower : null // 순시 전력량 카드 데이터
 
-  const chartDescription = '시간에 따른 데이터가 나타나며, AI가 30분 뒤의 예측 결과를 제공합니다.' // 차트 설명 문구
+  const chartDescription = t('시간에 따른 데이터가 나타나며, AI가 30분 뒤의 예측 결과를 제공합니다.') // 차트 설명 문구
 
   /******************** 함수 영역 ********************/
   // 고객사 검색 입력 변경 핸들러 (입력값 포함 검색 + 정확히 일치하면 선택)
   const handleCustomerKeywordChange = (value: string) => {
     setCustomerKeyword(value)
     setIsCustomerDropdownOpen(true)
+    setIsCustomerSearching(true) // 사용자가 직접 입력 → 검색 모드
 
     const trimmed = value.trim()
     const exact = customerOptions.find((item) => item.name === trimmed)
@@ -477,6 +483,7 @@ export default function DetailMonitoringPage() {
   // 드롭다운 항목 선택 핸들러
   const handleCustomerSelect = (item: AdminCustomerOptionType) => {
     setCustomerKeyword(item.name)
+    setIsCustomerSearching(false) // 선택 완료 → 검색 모드 해제(다음 열람 시 전체 목록)
     if (selectedCustomerId !== item.id) {
       setSelectedCustomerId(item.id)
       setSelectedCompressorId(0)
@@ -540,7 +547,7 @@ export default function DetailMonitoringPage() {
         const json = (await response.json().catch(() => null)) as GetCustomersResponseType | null
 
         if (!response.ok || !json?.success) {
-          throw new Error(json?.message ?? '고객사 목록을 불러오지 못했습니다.')
+          throw new Error(json?.message ?? t('고객사 목록을 불러오지 못했습니다.'))
         }
 
         const options = (Array.isArray(json.data) ? json.data : [])
@@ -562,7 +569,7 @@ export default function DetailMonitoringPage() {
         if (!disposed) {
           setCustomerOptions([])
           setSelectedCustomerId('')
-          setCustomerListError(error?.message ?? '고객사 목록 조회 중 오류가 발생했습니다.')
+          setCustomerListError(error?.message ?? t('고객사 목록 조회 중 오류가 발생했습니다.'))
         }
       } finally {
         if (!disposed) {
@@ -607,7 +614,7 @@ export default function DetailMonitoringPage() {
         const json = (await response.json().catch(() => null)) as GetDevicesResponseType | null
 
         if (!response.ok || !json?.success) {
-          throw new Error(json?.message ?? '연결된 장비를 불러오지 못했습니다.')
+          throw new Error(json?.message ?? t('연결된 장비를 불러오지 못했습니다.'))
         }
 
         const list = Array.isArray(json.data) ? json.data : []
@@ -629,7 +636,7 @@ export default function DetailMonitoringPage() {
         if (!disposed) {
           setTabs([])
           setSelectedCompressorId(0)
-          setTabsError(error?.message ?? '장비 목록 조회 중 오류가 발생했습니다.')
+          setTabsError(error?.message ?? t('장비 목록 조회 중 오류가 발생했습니다.'))
         }
       } finally {
         if (!disposed) {
@@ -689,7 +696,7 @@ export default function DetailMonitoringPage() {
 
         if (!response.ok || !json) {
           throw new Error(
-            (json as any)?.message ?? `모니터링 데이터를 불러오지 못했습니다. (HTTP ${response.status})`,
+            (json as any)?.message ?? `${t('모니터링 데이터를 불러오지 못했습니다.')} (HTTP ${response.status})`,
           )
         }
 
@@ -704,7 +711,7 @@ export default function DetailMonitoringPage() {
         }
       } catch (error: any) {
         if (!disposed) {
-          setDashboardError(error?.message ?? '모니터링 조회 중 오류가 발생했습니다.')
+          setDashboardError(error?.message ?? t('모니터링 조회 중 오류가 발생했습니다.'))
         }
       } finally {
         if (!disposed) {
@@ -772,22 +779,26 @@ export default function DetailMonitoringPage() {
       <header className={dmc.detail_pageHead}>
         <div className={dmc.detail_pageHeadTop}>
           <div className={dmc.detail_pageHeadText}>
-            <h1>컴프레서 상태 모니터링</h1>
-            <p>실시간 컴프레서 운전 상태 및 30분에 대한 예측 결과를 확인하실 수 있습니다.</p>
+            <h1>{t('컴프레서 상태 모니터링')}</h1>
+            <p>{t('실시간 컴프레서 운전 상태 및 30분에 대한 예측 결과를 확인하실 수 있습니다.')}</p>
           </div>
 
           {isAdminUser && (
             <div className={dmc.detail_customerSelectBox}>
-              <strong className={dmc.detail_customerSelectTitle}>고객사 선택</strong>
+              <strong className={dmc.detail_customerSelectTitle}>{t('고객사 선택')}</strong>
 
             <div className={dmc.detail_customerSelectControls}>
               <div className={dmc.detail_customerCombo} ref={customerComboRef}>
                 <input
                   type="text"
                   className={dmc.detail_customerSearchInput}
-                  placeholder="고객사 검색 후 선택"
+                  placeholder={t('고객사 검색 후 선택')}
                   value={customerKeyword}
-                  onFocus={() => setIsCustomerDropdownOpen(true)}
+                  onFocus={(e) => {
+                    setIsCustomerDropdownOpen(true)
+                    setIsCustomerSearching(false) // 열람 시작 → 전체 목록 표시
+                    e.currentTarget.select() // 이름 전체 선택: 바로 타이핑하면 새 검색
+                  }}
                   onChange={(e) => handleCustomerKeywordChange(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Escape') {
@@ -808,7 +819,7 @@ export default function DetailMonitoringPage() {
                   className={dmc.detail_customerComboArrow}
                   onClick={() => setIsCustomerDropdownOpen((prev) => !prev)}
                   disabled={isCustomerListLoading}
-                  aria-label="고객사 목록 열기"
+                  aria-label={t('고객사 목록 열기')}
                 >
                   ▾
                 </button>
@@ -830,7 +841,7 @@ export default function DetailMonitoringPage() {
                         </button>
                       ))
                     ) : (
-                      <div className={dmc.detail_customerDropdownEmpty}>검색 결과가 없습니다.</div>
+                      <div className={dmc.detail_customerDropdownEmpty}>{t('검색 결과가 없습니다.')}</div>
                     )}
                   </div>
                 )}
@@ -858,7 +869,7 @@ export default function DetailMonitoringPage() {
               className={dmc.detail_tabsArrow}
               onClick={handleMovePrevTabs}
               disabled={!canMovePrevTabs}
-              aria-label="이전 컴프레서"
+              aria-label={t('이전 컴프레서')}
             >
               {'<'}
             </button>
@@ -868,7 +879,7 @@ export default function DetailMonitoringPage() {
             <div className={dmc.detail_tabsRow}>
               {isTabsLoading && (
                 <button type="button" className={dmc.detail_tabBtn} disabled>
-                  <span>장비 목록을 불러오는 중...</span>
+                  <span>{t('장비 목록을 불러오는 중...')}</span>
                 </button>
               )}
 
@@ -905,7 +916,7 @@ export default function DetailMonitoringPage() {
               className={dmc.detail_tabsArrow}
               onClick={handleMoveNextTabs}
               disabled={!canMoveNextTabs}
-              aria-label="다음 컴프레서"
+              aria-label={t('다음 컴프레서')}
             >
               {'>'}
             </button>
@@ -936,7 +947,7 @@ export default function DetailMonitoringPage() {
               fontWeight: 700,
             }}
           >
-            모니터링 데이터를 불러오는 중입니다.
+            {t('모니터링 데이터를 불러오는 중입니다.')}
           </div>
         ) : null}
 
@@ -944,15 +955,15 @@ export default function DetailMonitoringPage() {
           <div className={dmc.detail_dashboard}>
             <article className={dmc.detail_intro}>
               <div className={dmc.detail_introTitleWrap}>
-                <h2>컴프레서 상태</h2>
-                <p>컴프레서 상태에 대한 실시간 모니터링 값과 AI 예측 결과를 제공합니다.</p>
+                <h2>{t('컴프레서 상태')}</h2>
+                <p>{t('컴프레서 상태에 대한 실시간 모니터링 값과 AI 예측 결과를 제공합니다.')}</p>
               </div>
 
               <div className={dmc.detail_statusLegend}>
                 {(['normal', 'warning', 'danger'] as StatusType[]).map((status) => (
                   <div key={status} className={dmc.detail_statusItem}>
                     <span className={`${dmc.detail_statusDot} ${getStatusClassName(status, dmc)}`} />
-                    <span>{STATUS_LABEL_MAP[status]}</span>
+                    <span>{t(STATUS_LABEL_MAP[status])}</span>
                   </div>
                 ))}
               </div>
@@ -960,7 +971,7 @@ export default function DetailMonitoringPage() {
 
             <div className={dmc.detail_kpiRow}>
               <div className={`${dmc.detail_kpiCard} ${dmc.detail_peakSettingCard}`}>
-                <h3>순시 전력량 피크값 설정</h3>
+                <h3>{t('순시 전력량 피크값 설정')}</h3>
                 <input
                   type="number"
                   className={dmc.detail_peakInput}
@@ -985,7 +996,7 @@ export default function DetailMonitoringPage() {
                 }`}
                 onClick={() => setSelectedMetricKey('instantPower')}
               >
-                <p className={dmc.detail_kpiTitle}>순시 전력량(kW)</p>
+                <p className={dmc.detail_kpiTitle}>{t('순시 전력량')}(kW)</p>
                 <div className={dmc.detail_kpiValueRow}>
                   <strong className={dmc.detail_kpiValue}>{formatMetricValue(instantPowerMetric)}</strong>
                   <span
@@ -1008,7 +1019,7 @@ export default function DetailMonitoringPage() {
               </button>
 
               <div className={dmc.detail_kpiCard}>
-                <p className={dmc.detail_kpiTitle}>일 누적 전력량(kW)</p>
+                <p className={dmc.detail_kpiTitle}>{t('일 누적 전력량')}(kW)</p>
                 <div className={dmc.detail_kpiValueRow}>
                   <strong className={dmc.detail_kpiValue}>{formatNumber(selectedDashboard.dailyPower, 2)}</strong>
                   <span className={`${dmc.detail_deltaBadge} ${dmc.detail_deltaBadgePositive}`}>
@@ -1034,7 +1045,7 @@ export default function DetailMonitoringPage() {
                     onClick={() => setSelectedMetricKey(metric.key)}
                   >
                     <div className={dmc.detail_metricHead}>
-                      <strong className={dmc.detail_metricTitle}>{metric.label}</strong>
+                      <strong className={dmc.detail_metricTitle}>{t(metric.label)}</strong>
                       <span className={dmc.detail_metricUnit}>({metric.unit})</span>
                     </div>
 
@@ -1063,7 +1074,7 @@ export default function DetailMonitoringPage() {
             <article className={dmc.detail_chartPanel}>
               <div className={dmc.detail_chartHead}>
                 <h3 className={dmc.detail_chartTitle}>
-                  {selectedMetric.label}({selectedMetric.unit})
+                  {t(selectedMetric.label)}({selectedMetric.unit})
                 </h3>
                 <p className={dmc.detail_chartDescription}>
                   <span

@@ -5,6 +5,7 @@
    01) Signin Background
    ========================================================================== */
 .auth_background {
+  position: relative;
   min-height: 100vh;
   width: 100%;
   padding: 16px;
@@ -15,6 +16,13 @@
   background:
     /* linear-gradient(110deg, rgba(205, 196, 222, 0.52) 0%, rgba(186, 206, 226, 0.52) 100%), */
     url("../../../components/style/resources/imgs/system_background.png") center / cover no-repeat;
+}
+
+.signin_lang_toggle {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  z-index: 10;
 }
 
 /* ==========================================================================

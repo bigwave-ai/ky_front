@@ -1,0 +1,31 @@
+# 빌드 컨텍스트에서 제외 — 이미지 군살/시크릿 레이어 방지.
+# 빌드에 필요한 것(package*.json, app/, pages/, prisma/, public/, config/,
+# next.config.*, tsconfig.json, middleware.ts 등)은 제외하지 않는다.
+
+# 의존성/빌드 산출물 (Dockerfile이 npm install + npm run build로 재생성)
+node_modules
+.next
+out
+
+# 형상관리
+.git
+.gitignore
+
+# 시크릿/환경 — 빌드 ARG로 주입되므로 .env 파일을 이미지에 굽지 않는다
+.env
+.env.*
+!.env.example
+
+# 로그/임시/백업
+*.log
+*.bak
+*.bak.*
+
+# Docker/문서 (빌드 불필요)
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+docker-compose*.yaml
+README*.md
+FRONTEND_INTEGRATION.md
+AGENTS.md

@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react';
 import SigninClient from './signin-client';
+import { useTranslation } from '@/app/services/i18n/LanguageProvider';
 
 /*
  * 01. 구분     : Credential Component
@@ -14,10 +15,11 @@ import SigninClient from './signin-client';
 
 export default function Page() {
   /******************** 변수 영역 ********************/
+  const { t } = useTranslation();
   /******************** 함수 영역 ********************/
   /******************** 수행 영역 ********************/
   return (
-    <Suspense fallback={<div style={{ padding: 24 }}>로딩 중…</div>}>
+    <Suspense fallback={<div style={{ padding: 24 }}>{t('로딩 중…')}</div>}>
       <SigninClient />
     </Suspense>
   );

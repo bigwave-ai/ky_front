@@ -2,6 +2,7 @@
 
 import { useId, useMemo, useState } from 'react'
 import * as S from '@/app/components/style/styleds/libs/charts/common/styled-common-detail-monitoring-timeseries'
+import { useTranslation } from '@/app/services/i18n/LanguageProvider'
 
 export type DetailMonitoringPointType = {
   time: string
@@ -75,6 +76,7 @@ export default function CommonDetailMonitoringTimeSeriesChart({
   peakValue,
   showPeakLine = false,
 }: CommonDetailMonitoringTimeSeriesProps) {
+  const { t } = useTranslation()
   const [tooltip, setTooltip] = useState<TooltipStateType>(null)
 
   const uid = useId().replace(/:/g, '')
@@ -171,7 +173,7 @@ export default function CommonDetailMonitoringTimeSeriesChart({
   }, [actualData, forecastData, peakValue, showPeakLine])
 
   if (!geometry) {
-    return <S.NoData>표시할 시계열 데이터가 없습니다.</S.NoData>
+    return <S.NoData>{t('표시할 시계열 데이터가 없습니다.')}</S.NoData>
   }
 
   const tooltipWidth = 164
@@ -189,11 +191,11 @@ export default function CommonDetailMonitoringTimeSeriesChart({
       <S.ChartLegend>
         <S.LegendItem>
           <S.LegendSwatch $kind="actual" />
-          <span>실제값</span>
+          <span>{t('실제값')}</span>
         </S.LegendItem>
         <S.LegendItem>
           <S.LegendSwatch $kind="forecast" />
-          <span>예측값</span>
+          <span>{t('예측값')}</span>
         </S.LegendItem>
       </S.ChartLegend>
 
@@ -201,7 +203,7 @@ export default function CommonDetailMonitoringTimeSeriesChart({
         viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
         preserveAspectRatio="xMidYMin meet"
         role="img"
-        aria-label="실제값과 예측값 시계열 그래프"
+        aria-label={t('실제값과 예측값 시계열 그래프')}
       >
         <defs>
           <linearGradient id={plotBgId} x1="0" y1="0" x2="0" y2="1">
@@ -288,7 +290,7 @@ export default function CommonDetailMonitoringTimeSeriesChart({
             <>
               <S.PeakLine x1={geometry.plotLeft} y1={geometry.peakY} x2={geometry.plotRight} y2={geometry.peakY} />
               <S.PeakLabel x={geometry.plotRight - 4} y={geometry.peakY - 6} textAnchor="end">
-                이상치 기준 ({formatTick(geometry.peakValue ?? 0)})
+                {t('이상치 기준')} ({formatTick(geometry.peakValue ?? 0)})
               </S.PeakLabel>
             </>
           )}
@@ -310,7 +312,7 @@ export default function CommonDetailMonitoringTimeSeriesChart({
               }
               onMouseLeave={() => setTooltip(null)}
             >
-              <title>{`실제값 ${point.time} / ${formatPointValue(point.value)} ${unitLabel}`}</title>
+              <title>{`${t('실제값')} ${point.time} / ${formatPointValue(point.value)} ${unitLabel}`}</title>
             </S.HoverPoint>
           ))}
 
@@ -331,7 +333,7 @@ export default function CommonDetailMonitoringTimeSeriesChart({
               }
               onMouseLeave={() => setTooltip(null)}
             >
-              <title>{`예측값 ${point.time} / ${formatPointValue(point.value)} ${unitLabel}`}</title>
+              <title>{`${t('예측값')} ${point.time} / ${formatPointValue(point.value)} ${unitLabel}`}</title>
             </S.HoverPoint>
           ))}
 
@@ -340,7 +342,7 @@ export default function CommonDetailMonitoringTimeSeriesChart({
               <S.TooltipRect width={tooltipWidth} height={tooltipHeight} rx={8} ry={8} />
               <S.TooltipHeadDot cx={10} cy={14} r={4} $kind={tooltip.kind} />
               <S.TooltipHeadText x={18} y={18}>
-                {tooltip.kind === 'actual' ? '실제값' : '예측값'} ({tooltip.time})
+                {tooltip.kind === 'actual' ? t('실제값') : t('예측값')} ({tooltip.time})
               </S.TooltipHeadText>
               <S.TooltipValueText x={10} y={38}>
                 {formatPointValue(tooltip.value)} {unitLabel}
@@ -369,7 +371,7 @@ export default function CommonDetailMonitoringTimeSeriesChart({
           </S.AxisTitle>
 
           <S.AxisTitle x={geometry.plotRight + 8} y={geometry.chartBottom - 16} textAnchor="end">
-            시간
+            {t('시간')}
           </S.AxisTitle>
         </g>
       </S.ChartSvg>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from '@/app/services/i18n/LanguageProvider'
 import {
   CdeCenter,
   CdeDonut,
@@ -51,6 +52,8 @@ export default function CommonDonutEquipment({
   totalLabel = '전체 장비 수',
 }: CommonDonutEquipmentProps) {
   /******************** 변수 영역 ********************/
+  const { t } = useTranslation()
+
   const prepared = useMemo(() => {
     const normalized = legend.map((item) => {
       const rawValue = toNumber(item.value)
@@ -100,7 +103,7 @@ export default function CommonDonutEquipment({
   return (
     <CdeRoot>
       <CdeVisual>
-        <CdeDonut role="img" aria-label="장비 수 구성비 도넛 차트">
+        <CdeDonut role="img" aria-label={t('장비 수 구성비 도넛 차트')}>
           <CdeSvg viewBox="0 0 180 180" width={210} height={210} preserveAspectRatio="xMidYMid meet">
             <CdeTrack cx="90" cy="90" r={radius} fill="none" />
             {prepared.map((item, idx) => {
@@ -132,7 +135,7 @@ export default function CommonDonutEquipment({
             <CdeCenter>
               <span>{focusItem?.label}</span>
               <strong>{focusItem?.displayValue}</strong>
-              <small>실제값</small>
+              <small>{t('실제값')}</small>
             </CdeCenter>
           )}
         </CdeDonut>
@@ -157,9 +160,9 @@ export default function CommonDonutEquipment({
 
           <CdeTotalItem>
             <CdeLegendLeft>
-              <CdeLabel>{totalLabel}</CdeLabel>
+              <CdeLabel>{t(totalLabel)}</CdeLabel>
             </CdeLegendLeft>
-            <CdeValue>{`${totalValue.toLocaleString('ko-KR')}대`}</CdeValue>
+            <CdeValue>{`${totalValue.toLocaleString('ko-KR')}${t('대')}`}</CdeValue>
           </CdeTotalItem>
         </CdeLegend>
       </CdeSide>

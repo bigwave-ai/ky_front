@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import imc from './IntegratedMonitoring.module.css'
 import imag from '@/app/components/style/resources/css/image.module.css'
+import { useTranslation } from '@/app/services/i18n/LanguageProvider'
 
 /*
  * 01. 구분     : Page 컴포넌트
@@ -25,6 +26,7 @@ type AlarmLogRowType = {
 
 export default function IntegratedMonitoringPage() {
   /******************** 변수 영역 ********************/
+  const { t } = useTranslation()
   const [activePage, setActivePage] = useState(6) // 현재 선택된 페이지네이션 번호
 
   const totalCustomerCount = '1,432' // 전체 고객사 수
@@ -131,14 +133,14 @@ export default function IntegratedMonitoringPage() {
   return (
     <div className={imc.integrated_root}>
       <header className={imc.integrated_pageHead}>
-        <h1>시스템 통합 관제 현황</h1>
-        <p>전체 고객사와 컴프레셔 가동에 대한 종합적인 정보를 확인하실 수 있습니다.</p>
+        <h1>{t('시스템 통합 관제 현황')}</h1>
+        <p>{t('전체 고객사와 컴프레셔 가동에 대한 종합적인 정보를 확인하실 수 있습니다.')}</p>
       </header>
 
       <section className={imc.integrated_statsGrid}>
         <article className={imc.integrated_statCard}>
           <div className={imc.integrated_statTop}>
-            <h3>전체 고객사 수</h3>
+            <h3>{t('전체 고객사 수')}</h3>
             <div className={imc.integrated_iconWrap}>
               <div className={imag.user_circle_icon} aria-hidden="true" />
             </div>
@@ -148,7 +150,7 @@ export default function IntegratedMonitoringPage() {
 
         <article className={imc.integrated_statCard}>
           <div className={imc.integrated_statTop}>
-            <h3>가동 컴프레셔 수</h3>
+            <h3>{t('가동 컴프레셔 수')}</h3>
             <div className={imc.integrated_iconWrap}>
               <div className={imag.compressor_circle_blue_icon} aria-hidden="true" />
             </div>
@@ -159,7 +161,7 @@ export default function IntegratedMonitoringPage() {
         <article className={imc.integrated_statCard}>
           <div className={imc.integrated_statTop}>
             <h3 className={imc.integrated_titleGreen}>
-              정상 <span style={{ color: '#2B2B2B' }}>컴프레셔 수</span>
+              {t('정상')} <span style={{ color: '#2B2B2B' }}>{t('컴프레셔 수')}</span>
             </h3>
             <div className={imc.integrated_iconWrap}>
               <div className={imag.compressor_circle_green_icon} aria-hidden="true" />
@@ -181,7 +183,7 @@ export default function IntegratedMonitoringPage() {
         <article className={imc.integrated_statCard}>
           <div className={imc.integrated_statTop}>
             <h3 className={imc.integrated_titleRed}>
-              경고 <span style={{ color: '#2B2B2B' }}>컴프레셔 수</span>
+              {t('경고')} <span style={{ color: '#2B2B2B' }}>{t('컴프레셔 수')}</span>
             </h3>
             <div className={imc.integrated_iconWrap}>
               <div className={imag.compressor_circle_red_icon} aria-hidden="true" />
@@ -205,8 +207,8 @@ export default function IntegratedMonitoringPage() {
         <div className={imc.integrated_logHead}>
           <div className={imc.integrated_logTitleWrap}>
             <span className={imc.integrated_logDot} aria-hidden="true" />
-            <h3>고객사 알람 로그</h3>
-            <p>고객사의 알람에 따른 내용을 확인해주세요.</p>
+            <h3>{t('고객사 알람 로그')}</h3>
+            <p>{t('고객사의 알람에 따른 내용을 확인해주세요.')}</p>
           </div>
         </div>
 
@@ -214,11 +216,11 @@ export default function IntegratedMonitoringPage() {
           <table className={imc.integrated_table}>
             <thead>
               <tr>
-                <th>일련번호</th>
-                <th>일시</th>
-                <th>알람 종류</th>
-                <th>고객사</th>
-                <th>알람 내용</th>
+                <th>{t('일련번호')}</th>
+                <th>{t('일시')}</th>
+                <th>{t('알람 종류')}</th>
+                <th>{t('고객사')}</th>
+                <th>{t('알람 내용')}</th>
               </tr>
             </thead>
             <tbody>
@@ -227,10 +229,10 @@ export default function IntegratedMonitoringPage() {
                   <td>{row.seq}</td>
                   <td>{row.time}</td>
                   <td>
-                    <span className={getAlarmStatusClassName(row.level)}>{row.level}</span>
+                    <span className={getAlarmStatusClassName(row.level)}>{t(row.level)}</span>
                   </td>
                   <td>{row.customer}</td>
-                  <td>{row.message}</td>
+                  <td>{t(row.message)}</td>
                 </tr>
               ))}
             </tbody>
@@ -238,7 +240,7 @@ export default function IntegratedMonitoringPage() {
         </div>
 
         <div className={imc.integrated_pagination}>
-          <button type="button" className={imc.integrated_pageArrow} aria-label="이전 페이지">
+          <button type="button" className={imc.integrated_pageArrow} aria-label={t('이전 페이지')}>
             &lt;
           </button>
 
@@ -253,7 +255,7 @@ export default function IntegratedMonitoringPage() {
             </button>
           ))}
 
-          <button type="button" className={imc.integrated_pageArrow} aria-label="다음 페이지">
+          <button type="button" className={imc.integrated_pageArrow} aria-label={t('다음 페이지')}>
             &gt;
           </button>
         </div>

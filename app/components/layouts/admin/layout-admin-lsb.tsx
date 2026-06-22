@@ -6,6 +6,7 @@ import { useAtom, useAtomValue } from 'jotai'
 
 import mmc from '../../style/resources/css/member.module.css'
 import imag from '../../style/resources/css/image.module.css'
+import { useTranslation } from '@/app/services/i18n/LanguageProvider'
 import {
   AtomSideMenuItem,
   type AtomSideMenuItemType,
@@ -33,6 +34,7 @@ export default function LayoutAdminLsb({
   onClose,
 }: LayoutAdminLsbProps) {
   /******************** 변수 영역 ********************/
+  const { t } = useTranslation()
   const pathname = usePathname()
   const router = useRouter()
   const session = useAtomValue(userInfoAtom)
@@ -87,19 +89,19 @@ export default function LayoutAdminLsb({
       className={`${mmc.lsb} ${isMobileOpen ? mmc.lsbMobileOpen : ''}`}
     >
       <div className={mmc.lsb_brand}>
-        <div className={imag.company_logo} aria-label="케이와이 로고" />
+        <div className={imag.company_logo} aria-label={t('케이와이 로고')} />
         <div
           className={`${mmc.lsb_brand_texts} ${isMobileOpen ? mmc.lsb_brand_texts_compact : ''}`}
         >
-          <strong>(주)케이와이</strong>
-          <span>케이와이 AI Agent</span>
+          <strong>{t('(주)케이와이')}</strong>
+          <span>{t('케이와이 AI Agent')}</span>
         </div>
 
         <button
           type="button"
           className={mmc.lsbCloseBtn}
           onClick={onClose}
-          aria-label="사이드바 닫기"
+          aria-label={t('사이드바 닫기')}
         >
           ×
         </button>
@@ -108,9 +110,9 @@ export default function LayoutAdminLsb({
       <div className={mmc.lsb_inner}>
         {menuSections.map((section) => (
           <section key={section.title} className={mmc.lsb_group}>
-            <div className={mmc.lsb_section_title}>{section.title}</div>
+            <div className={mmc.lsb_section_title}>{t(section.title)}</div>
 
-            <nav className={mmc.lsb_nav} aria-label={`${section.title} 메뉴`}>
+            <nav className={mmc.lsb_nav} aria-label={`${t(section.title)} ${t('메뉴')}`}>
               {section.items.map((item) => {
                 const active = isActive(item.path)
 
@@ -121,11 +123,11 @@ export default function LayoutAdminLsb({
                     onClick={() => handleSelect(item)}
                     className={`${mmc.lsb_item} ${active ? mmc.lsb_item_active : ''}`}
                     aria-current={active ? 'page' : undefined}
-                    aria-label={item.menuNm}
-                    title={item.menuNm}
+                    aria-label={t(item.menuNm)}
+                    title={t(item.menuNm)}
                   >
                     <span className={mmc.lsb_item_dot} aria-hidden="true" />
-                    <span className={mmc.lsb_item_label}>{item.menuNm}</span>
+                    <span className={mmc.lsb_item_label}>{t(item.menuNm)}</span>
                   </button>
                 )
               })}

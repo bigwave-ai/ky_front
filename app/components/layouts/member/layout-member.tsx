@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTranslation } from '@/app/services/i18n/LanguageProvider'
 import LayoutMemberContents from './layout-member-contents'
 import LayoutMemberHeader from './layout-member-header'
 import LayoutMemberLsb from './layout-member-lsb'
@@ -19,6 +20,7 @@ const MOBILE_BREAKPOINT = 1200
 
 const LayoutMember = ({ children }: { children: React.ReactNode }) => {
   /******************** 변수 영역 ********************/
+  const { t } = useTranslation()
   const [isMobile, setIsMobile] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
 
@@ -47,7 +49,7 @@ const LayoutMember = ({ children }: { children: React.ReactNode }) => {
           type="button"
           className={mmc.mobileMenuOverlay}
           onClick={closeMobileMenu}
-          aria-label="사이드바 닫기 오버레이"
+          aria-label={t('사이드바 닫기 오버레이')}
         />
       )}
 

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import warnIcon from '@/app/components/style/resources/imgs/warnning_icon.png';
+import { useTranslation } from '@/app/services/i18n/LanguageProvider';
 import {
   Overlay,
   ModalWrap,
@@ -46,6 +47,7 @@ export default function WarningModal({
   cancelText = '취소',
   showCancel = true,
 }: WarningModalProps) {
+  const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -75,15 +77,15 @@ export default function WarningModal({
       <Overlay onClick={canCancel ? onCancel : undefined} />
       <ModalWrap role="dialog" aria-modal="true" aria-labelledby="warn-title">
         <WarnImage>
-          <Image src={warnIcon} alt="경고" fill sizes="64px" style={{ objectFit: 'contain' }} />
+          <Image src={warnIcon} alt={t('경고')} fill sizes="64px" style={{ objectFit: 'contain' }} />
         </WarnImage>
 
         <Title id="warn-title">{title}</Title>
         <Detail>{detail}</Detail>
 
         <Actions>
-          <BtnConfirm as={Btn} onClick={onConfirm}>{confirmText}</BtnConfirm>
-          {canCancel && <BtnCancel as={Btn} onClick={onCancel}>{cancelText}</BtnCancel>}
+          <BtnConfirm as={Btn} onClick={onConfirm}>{t(confirmText)}</BtnConfirm>
+          {canCancel && <BtnCancel as={Btn} onClick={onCancel}>{t(cancelText)}</BtnCancel>}
         </Actions>
       </ModalWrap>
     </>

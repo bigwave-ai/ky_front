@@ -10,6 +10,7 @@ import LoadingModal from '@/app/components/libs/modals/modal-loading'
 import WarningModal from '@/app/components/libs/modals/modal-warnning'
 import CommonPeakPredictBars from '@/app/components/libs/charts/common/common-peak-predict-bars'
 import { withAppPrefix } from '@/config/environment'
+import { useTranslation } from '@/app/services/i18n/LanguageProvider'
 
 /*
  * 01. 구분     : Page 컴포넌트
@@ -175,6 +176,7 @@ const fetchAdminCustomers = async (): Promise<AdminCustomerOptionType[]> => {
 
 export default function PeakShavingPage() {
   /******************** 변수 영역 ********************/
+  const { t } = useTranslation()
   const [idleThreshold, setIdleThreshold] = useState(0.05) // 미가동 기준값(0~1, 소수 2자리)
   const [queryHour, setQueryHour] = useState(24) // 조회 시간(시간 단위)
   const [showEquipmentResult, setShowEquipmentResult] = useState(false) // 결과 카드 표시 여부
@@ -193,6 +195,7 @@ export default function PeakShavingPage() {
   const [customerOptions, setCustomerOptions] = useState<AdminCustomerOptionType[]>([]) // 관리자 고객사 목록
   const [selectedCustomerId, setSelectedCustomerId] = useState('') // 관리자 선택 고객사 ID
   const [customerKeyword, setCustomerKeyword] = useState('') // 고객사 검색어
+  const [isCustomerSearching, setIsCustomerSearching] = useState(false) // 사용자가 직접 검색어를 입력 중인지 여부
   const [isCustomerListLoading, setIsCustomerListLoading] = useState(false) // 고객사 목록 로딩 여부
   const [customerListError, setCustomerListError] = useState<string | null>(null) // 고객사 목록 오류 메시지
   const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false) // 고객사 드롭다운 오픈 여부
@@ -211,7 +214,9 @@ export default function PeakShavingPage() {
 
   const filteredCustomerOptions = useMemo(() => {
     const keyword = customerKeyword.trim().toLowerCase()
-    const filtered = keyword
+    // 사용자가 직접 검색어를 입력 중일 때만 필터링한다.
+    // 고객사를 선택해 input에 이름이 채워진 상태에서는 전체 목록을 보여준다.
+    const filtered = keyword && isCustomerSearching
       ? customerOptions.filter((item) => item.name.toLowerCase().includes(keyword))
       : customerOptions
 
@@ -220,7 +225,7 @@ export default function PeakShavingPage() {
 
     const selected = customerOptions.find((item) => item.id === selectedCustomerId)
     return selected ? [selected, ...filtered] : filtered
-  }, [customerKeyword, customerOptions, selectedCustomerId]) // 검색 적용 고객사 목록
+  }, [customerKeyword, customerOptions, selectedCustomerId, isCustomerSearching]) // 검색 적용 고객사 목록
 
   const analysisEquipmentCount = milpResult?.device_count ?? 0 // 분석 장비 수
   const idleEquipmentCount = milpResult?.idle_device_ids.length ?? 0 // 미가동 장비 수
@@ -229,11 +234,11 @@ export default function PeakShavingPage() {
 
   const equipmentLegend: CommonDonutEquipmentItem[] = useMemo(
     () => [
-      { label: '분석 장비 수', value: analysisEquipmentCount, color: '#0d274b', unit: '대' },
-      { label: '미가동 장비 수', value: idleEquipmentCount, color: '#29a9dd', unit: '대' },
-      { label: '제외 장비 수', value: skippedEquipmentCount, color: '#e9a24f', unit: '대' },
+      { label: t('분석 장비 수'), value: analysisEquipmentCount, color: '#0d274b', unit: t('대') },
+      { label: t('미가동 장비 수'), value: idleEquipmentCount, color: '#29a9dd', unit: t('대') },
+      { label: t('제외 장비 수'), value: skippedEquipmentCount, color: '#e9a24f', unit: t('대') },
     ],
-    [analysisEquipmentCount, idleEquipmentCount, skippedEquipmentCount],
+    [analysisEquipmentCount, idleEquipmentCount, skippedEquipmentCount, t],
   ) // 도넛 차트 범례 데이터
 
   const peakCut15Kw = milpResult?.peak_15_reduction ?? 0 // 15분 피크 절감량(kW)
@@ -256,12 +261,12 @@ export default function PeakShavingPage() {
       return {
         deviceId: item.device_id,
         equipmentName,
-        distributionLines: lines.length ? lines : ['추천 분배 문구가 없습니다.'],
+        distributionLines: lines.length ? lines : [t('추천 분배 문구가 없습니다.')],
         base15Kw: item.baseline_15,
         base30Kw: item.baseline_30,
       }
     })
-  }, [milpResult, deviceNameMap]) // 장비별 추천 데이터
+  }, [milpResult, deviceNameMap, t]) // 장비별 추천 데이터
 
   const maxPredictValue = useMemo(() => {
     if (!recommendations.length) return 1
@@ -312,6 +317,7 @@ export default function PeakShavingPage() {
   const handleCustomerKeywordChange = (value: string) => {
     setCustomerKeyword(value)
     setIsCustomerDropdownOpen(true)
+    setIsCustomerSearching(true) // 사용자가 직접 입력 → 검색 모드
 
     const trimmed = value.trim()
     const exact = customerOptions.find((item) => item.name === trimmed)
@@ -328,6 +334,7 @@ export default function PeakShavingPage() {
   // 고객사 항목 선택 핸들러
   const handleCustomerSelect = (item: AdminCustomerOptionType) => {
     setCustomerKeyword(item.name)
+    setIsCustomerSearching(false) // 선택 완료 → 검색 모드 해제(다음 열람 시 전체 목록)
     if (selectedCustomerId !== item.id) {
       setSelectedCustomerId(item.id)
     }
@@ -340,7 +347,7 @@ export default function PeakShavingPage() {
 
     const customerId = String(resolvedCustomerId ?? '').trim() // 관리자/일반 사용자 공통 customer_id
     if (!customerId) {
-      openWarn('고객사 선택 필요', '고객사를 먼저 선택한 뒤 실행해주세요.')
+      openWarn(t('고객사 선택 필요'), t('고객사를 먼저 선택한 뒤 실행해주세요.'))
       return
     }
 
@@ -369,24 +376,24 @@ export default function PeakShavingPage() {
 
       if (!response.ok) {
         if (response.status === 400) {
-          throw new Error('연결된 장비를 찾을 수 없습니다.')
+          throw new Error(t('연결된 장비를 찾을 수 없습니다.'))
         }
 
         throw new Error(
           responseJson?.message ??
             responseJson?.details?.message ??
-            `MILP 실행 요청에 실패했습니다. (HTTP ${response.status})`,
+            `${t('MILP 실행 요청에 실패했습니다.')} (HTTP ${response.status})`,
         )
       }
 
       if (!responseJson) {
-        throw new Error('MILP 응답을 해석할 수 없습니다.')
+        throw new Error(t('MILP 응답을 해석할 수 없습니다.'))
       }
 
       const normalized = normalizePeakDispatchResponse(responseJson) // 응답 정규화
 
       if (normalized.success === false) {
-        throw new Error(normalized.message ?? 'MILP 실행 실패')
+        throw new Error(normalized.message ?? t('MILP 실행 실패'))
       }
 
       const deviceIds = normalized.devices
@@ -400,7 +407,7 @@ export default function PeakShavingPage() {
       setShowEquipmentResult(true)
     } catch (error: any) {
       setShowEquipmentResult(false)
-      openWarn('MILP 실행 실패', error?.message ?? '알 수 없는 오류가 발생했습니다.')
+      openWarn(t('MILP 실행 실패'), error?.message ?? t('알 수 없는 오류가 발생했습니다.'))
     } finally {
       setIsRunning(false)
     }
@@ -445,7 +452,7 @@ export default function PeakShavingPage() {
         if (!disposed) {
           setCustomerOptions([])
           setSelectedCustomerId('')
-          setCustomerListError(error?.message ?? '고객사 목록 조회 중 오류가 발생했습니다.')
+          setCustomerListError(error?.message ?? t('고객사 목록 조회 중 오류가 발생했습니다.'))
         }
       } finally {
         if (!disposed) {
@@ -495,22 +502,26 @@ export default function PeakShavingPage() {
       <header className={`${mmc.peak_pageHead} ${mmc.peak_stageFadeUp}`}>
         <div className={mmc.peak_pageHeadTop}>
           <div className={mmc.peak_pageHeadText}>
-            <h1>MILP 피크 분배 시뮬레이션</h1>
-            <p>MILP 피크 전력 분배 시뮬레이션 결과를 확인할 수 있습니다.</p>
+            <h1>{t('MILP 피크 분배 시뮬레이션')}</h1>
+            <p>{t('MILP 피크 전력 분배 시뮬레이션 결과를 확인할 수 있습니다.')}</p>
           </div>
 
           {isAdminUser && (
             <div className={mmc.peak_customerSelectBox}>
-              <strong className={mmc.peak_customerSelectTitle}>고객사 선택</strong>
+              <strong className={mmc.peak_customerSelectTitle}>{t('고객사 선택')}</strong>
 
               <div className={mmc.peak_customerSelectControls}>
                 <div className={mmc.peak_customerCombo} ref={customerComboRef}>
                   <input
                     type="text"
                     className={mmc.peak_customerSearchInput}
-                    placeholder="고객사 검색 후 선택"
+                    placeholder={t('고객사 검색 후 선택')}
                     value={customerKeyword}
-                    onFocus={() => setIsCustomerDropdownOpen(true)}
+                    onFocus={(e) => {
+                      setIsCustomerDropdownOpen(true)
+                      setIsCustomerSearching(false) // 열람 시작 → 전체 목록 표시
+                      e.currentTarget.select() // 이름 전체 선택: 바로 타이핑하면 새 검색
+                    }}
                     onChange={(e) => handleCustomerKeywordChange(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Escape') {
@@ -530,7 +541,7 @@ export default function PeakShavingPage() {
                     className={mmc.peak_customerComboArrow}
                     onClick={() => setIsCustomerDropdownOpen((prev) => !prev)}
                     disabled={isCustomerListLoading}
-                    aria-label="고객사 목록 열기"
+                    aria-label={t('고객사 목록 열기')}
                   >
                     ▾
                   </button>
@@ -552,7 +563,7 @@ export default function PeakShavingPage() {
                           </button>
                         ))
                       ) : (
-                        <div className={mmc.peak_customerDropdownEmpty}>검색 결과가 없습니다.</div>
+                        <div className={mmc.peak_customerDropdownEmpty}>{t('검색 결과가 없습니다.')}</div>
                       )}
                     </div>
                   )}
@@ -563,7 +574,7 @@ export default function PeakShavingPage() {
         </div>
 
         {isAdminUser && customerListError ? (
-          <p className={mmc.peak_customerSelectError}>{customerListError}</p>
+          <p className={mmc.peak_customerSelectError}>{t(customerListError)}</p>
         ) : null}
       </header>
 
@@ -571,15 +582,15 @@ export default function PeakShavingPage() {
         <>
           <section className={`${mmc.peak_selectCard} ${mmc.peak_stageFadeUp}`}>
             <div className={mmc.peak_selectTitleWrap}>
-              <h2>장비 선택/입력</h2>
-              <p>MILP 피크 분배 시뮬레이션을 위해 미가동 기준 및 조회시간을 입력해주세요.</p>
+              <h2>{t('장비 선택/입력')}</h2>
+              <p>{t('MILP 피크 분배 시뮬레이션을 위해 미가동 기준 및 조회시간을 입력해주세요.')}</p>
             </div>
 
             <div className={mmc.peak_selectControls}>
               <div className={`${mmc.peak_field} ${mmc.peak_field_idle}`}>
                 <div className={mmc.peak_fieldTop}>
-                  <span className={mmc.peak_fieldLabel}>미가동 기준</span>
-                  <span className={mmc.peak_fieldHint}>OP_STATUS 평균 이하</span>
+                  <span className={mmc.peak_fieldLabel}>{t('미가동 기준')}</span>
+                  <span className={mmc.peak_fieldHint}>{t('OP_STATUS 평균 이하')}</span>
                 </div>
                 <input
                   className={`${mmc.peak_numberInput} ${mmc.peak_numberInputSpin}`}
@@ -607,8 +618,8 @@ export default function PeakShavingPage() {
 
               <div className={`${mmc.peak_field} ${mmc.peak_field_time}`}>
                 <div className={mmc.peak_fieldTop}>
-                  <span className={mmc.peak_fieldLabel}>조회 시간</span>
-                  <span className={mmc.peak_fieldHint}>시뮬레이션 조회 시간 입력</span>
+                  <span className={mmc.peak_fieldLabel}>{t('조회 시간')}</span>
+                  <span className={mmc.peak_fieldHint}>{t('시뮬레이션 조회 시간 입력')}</span>
                 </div>
                 <input
                   className={`${mmc.peak_numberInput} ${mmc.peak_numberInputSpin}`}
@@ -633,7 +644,7 @@ export default function PeakShavingPage() {
                 onClick={handleRunMilp}
                 disabled={isRunning || (isAdminUser && !selectedCustomerId)}
               >
-                {isRunning ? 'MILP 실행 중..' : 'MILP 실행'}
+                {isRunning ? t('MILP 실행 중..') : t('MILP 실행')}
               </button>
             </div>
           </section>
@@ -643,14 +654,14 @@ export default function PeakShavingPage() {
               <div className={mmc.peak_topResultGrid}>
                 <article className={`${mmc.peak_equipmentCard} ${mmc.peak_stageFadeUp}`}>
                   <div className={mmc.peak_cardHead}>
-                    <h3>장비 수</h3>
-                    <p>MILP 피크에 대한 장비 분석 결과 입니다.</p>
+                    <h3>{t('장비 수')}</h3>
+                    <p>{t('MILP 피크에 대한 장비 분석 결과 입니다.')}</p>
                   </div>
 
                   <div className={mmc.peak_equipmentBody}>
                     <CommonDonutEquipment
                       legend={equipmentLegend}
-                      totalLabel={`전체 장비 수 (${totalEquipmentCount}대)`}
+                      totalLabel={`${t('전체 장비 수')} (${totalEquipmentCount}${t('대')})`}
                     />
                   </div>
                 </article>
@@ -662,7 +673,7 @@ export default function PeakShavingPage() {
                     <div className={`${imag.elctric_circle_icon} ${mmc.peak_electricIcon}`} />
                   </div>
 
-                  <h4 className={mmc.peak_peakReduceTitle}>15분 피크 절감</h4>
+                  <h4 className={mmc.peak_peakReduceTitle}>{t('15분 피크 절감')}</h4>
 
                   <div className={mmc.peak_peakReduceValueWrap}>
                     <strong className={mmc.peak_peakReduceValue}>{formatKw(peakCut15Kw)}</strong>
@@ -677,7 +688,7 @@ export default function PeakShavingPage() {
                     <div className={`${imag.elctric_circle_icon} ${mmc.peak_electricIcon}`} />
                   </div>
 
-                  <h4 className={mmc.peak_peakReduceTitle}>30분 피크 절감</h4>
+                  <h4 className={mmc.peak_peakReduceTitle}>{t('30분 피크 절감')}</h4>
 
                   <div className={mmc.peak_peakReduceValueWrap}>
                     <strong className={mmc.peak_peakReduceValue}>{formatKw(peakCut30Kw)}</strong>
@@ -688,8 +699,8 @@ export default function PeakShavingPage() {
 
               <article className={`${mmc.peak_recommendCard} ${mmc.peak_stageFadeUp}`}>
                 <div className={mmc.peak_cardHead}>
-                  <h3>장비 분배 추천</h3>
-                  <p>피크 절감을 위한 장비 분배 추천 결과입니다.</p>
+                  <h3>{t('장비 분배 추천')}</h3>
+                  <p>{t('피크 절감을 위한 장비 분배 추천 결과입니다.')}</p>
                 </div>
 
                 <div className={mmc.peak_recommendRows}>
@@ -698,12 +709,12 @@ export default function PeakShavingPage() {
                       <div key={item.deviceId} className={mmc.peak_recommendRow}>
                         <div className={mmc.peak_recommendInfoWrap}>
                           <div className={mmc.peak_recommendInfoRow}>
-                            <div className={mmc.peak_recommendBadge}>장비 정보</div>
+                            <div className={mmc.peak_recommendBadge}>{t('장비 정보')}</div>
                             <strong className={mmc.peak_recommendEquipment}>{item.equipmentName}</strong>
                           </div>
 
                           <div className={mmc.peak_recommendInfoRow}>
-                            <div className={mmc.peak_recommendBadgeLarge}>추천 분배</div>
+                            <div className={mmc.peak_recommendBadgeLarge}>{t('추천 분배')}</div>
                             <div className={mmc.peak_recommendTextGroup}>
                               {item.distributionLines.map((line, idx) => (
                                 <p key={`${item.deviceId}-${idx}`} className={mmc.peak_recommendText}>
@@ -715,12 +726,12 @@ export default function PeakShavingPage() {
                         </div>
 
                         <div className={mmc.peak_recommendRightGroup}>
-                          <div className={mmc.peak_recommendPredictBox}>장비 가동 예측</div>
+                          <div className={mmc.peak_recommendPredictBox}>{t('장비 가동 예측')}</div>
 
                           <CommonPeakPredictBars
                             bars={[
-                              { label: '15분 기준값', value: item.base15Kw },
-                              { label: '30분 기준값', value: item.base30Kw },
+                              { label: t('15분 기준값'), value: item.base15Kw },
+                              { label: t('30분 기준값'), value: item.base30Kw },
                             ]}
                             unit="kW"
                             maxValue={maxPredictValue}
@@ -734,7 +745,7 @@ export default function PeakShavingPage() {
                   ) : (
                     <div className={mmc.peak_recommendRow}>
                       <div className={mmc.peak_recommendTextGroup}>
-                        <p className={mmc.peak_recommendText}>추천할 장비 데이터가 없습니다.</p>
+                        <p className={mmc.peak_recommendText}>{t('추천할 장비 데이터가 없습니다.')}</p>
                       </div>
                     </div>
                   )}
@@ -747,8 +758,8 @@ export default function PeakShavingPage() {
 
       <LoadingModal
         open={isRunning}
-        message="MILP 시뮬레이션을 실행중입니다."
-        subMessage="잠시만 기다려주세요."
+        message={t('MILP 시뮬레이션을 실행중입니다.')}
+        subMessage={t('잠시만 기다려주세요.')}
       />
 
       <WarningModal

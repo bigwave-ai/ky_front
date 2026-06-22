@@ -13,6 +13,7 @@ import { muiButtonCommonStyle,muiButtonAddStyle,muiButtonSearchStyle,muiButtonDe
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Button from '@mui/material/Button';
 import React from 'react';
+import { useTranslation } from '@/app/services/i18n/LanguageProvider';
 
 /*
  * 01. 구분     : Library
@@ -53,90 +54,100 @@ interface MuiButtonCommonUnitProps {
 
 //목록 버튼
 export const MuiListButton = ({ fnClickBtn }: MuiButtonCommonUnitProps) => {
+  const { t } = useTranslation();
   return (
     <MuiButtonCommon endIcon={<FormatListBulletedIcon sx={{ color: '#004363' }} />} fnClickBtn={fnClickBtn}>
-      목록
+      {t('목록')}
     </MuiButtonCommon>
   );
 };
 
 //조회 버튼
 export const MuiSearchButton = ({ fnClickBtn }: MuiButtonCommonUnitProps) => {
+  const { t } = useTranslation();
   return (
     <MuiButtonCommon endIcon={<SearchIcon sx={{ color: '#7f5ecc' }} />} fnClickBtn={fnClickBtn}>
-      조회
+      {t('조회')}
     </MuiButtonCommon>
   );
 };
 
 //추가 버튼
 export const MuiAddButton = ({ fnClickBtn }: MuiButtonCommonUnitProps) => {
+  const { t } = useTranslation();
   return (
     <MuiButtonCommon endIcon={<AddCircleIcon sx={{ color: '#2196b3' }} />} fnClickBtn={fnClickBtn}>
-      추가
+      {t('추가')}
     </MuiButtonCommon>
   );
 };
 
 //작성 버튼
 export const MuiInputButton = ({ fnClickBtn }: MuiButtonCommonUnitProps) => {
+  const { t } = useTranslation();
   return (
     <MuiButtonCommon endIcon={<TextFieldsIcon sx={{ color: '#02723e' }} />} fnClickBtn={fnClickBtn}>
-      작성
+      {t('작성')}
     </MuiButtonCommon>
   );
 };
 
 //편집 버튼
 export const MuiEditButton = ({ fnClickBtn }: MuiButtonCommonUnitProps) => {
+  const { t } = useTranslation();
   return (
     <MuiButtonCommon endIcon={<EditIcon sx={{ color: '#f9a038' }} />} fnClickBtn={fnClickBtn}>
-      편집
+      {t('편집')}
     </MuiButtonCommon>
   );
 };
 
 //저장 버튼
 export const MuiSaveButton = ({ fnClickBtn }: MuiButtonCommonUnitProps) => {
+  const { t } = useTranslation();
   return (
     <MuiButtonCommon endIcon={<SaveIcon sx={{ color: '#50c959' }} />} fnClickBtn={fnClickBtn}>
-      저장
+      {t('저장')}
     </MuiButtonCommon>
   );
 };
 
 //제출 버튼
 export const MuiSubmitButton = ({ fnClickBtn }: MuiButtonCommonUnitProps) => {
+  const { t } = useTranslation();
   return (
     <MuiButtonCommon endIcon={<OutBoxIcon sx={{ color: '#02723e' }} />} fnClickBtn={fnClickBtn}>
-      제출
+      {t('제출')}
     </MuiButtonCommon>
   );
 };
 
 //삭제 버튼
 export const MuiDeleteButton = ({ fnClickBtn }: MuiButtonCommonUnitProps) => {
+  const { t } = useTranslation();
   return (
     <MuiButtonCommon endIcon={<DeleteIcon sx={{ color: '#ff5c5d' }} />} fnClickBtn={fnClickBtn}>
-      삭제
+      {t('삭제')}
     </MuiButtonCommon>
   );
 };
 
 //출력 버튼
 export const MuiPrintButton = ({ fnClickBtn }: MuiButtonCommonUnitProps) => {
+  const { t } = useTranslation();
   return (
     <MuiButtonCommon endIcon={<PrintIcon sx={{ color: '#28a1e0' }} />} fnClickBtn={fnClickBtn}>
-      출력
+      {t('출력')}
     </MuiButtonCommon>
   );
 };
 
 //도움말 버튼
 export const MuiHelpButton = ({ fnClickBtn }: MuiButtonCommonUnitProps) => {
+  const { t } = useTranslation();
   return (
     <MuiButtonCommon endIcon={<HelpIcon sx={{ color: '#aeaeae' }} />} fnClickBtn={fnClickBtn}>
-      도움말
+      {t('도움말')}
     </MuiButtonCommon>
   );
 };

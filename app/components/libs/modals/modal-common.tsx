@@ -14,6 +14,7 @@ import {
   BtnPrimary,
   BtnGhost,
 } from '@/app/components/style/styleds/libs/modals/styled-modal-common'
+import { useTranslation } from '@/app/services/i18n/LanguageProvider'
 
 export type CommonModalProps = {
   open: boolean
@@ -31,13 +32,17 @@ export default function CommonModal({
   open,
   title,
   detail,
-  confirmText = '확인',
+  confirmText,
   onConfirm,
-  cancelText = '닫기',
+  cancelText,
   onCancel,
   showCancel = true,
 }: CommonModalProps) {
+  const { t } = useTranslation()
   const [mounted, setMounted] = useState(false)
+
+  const confirmLabel = confirmText ?? t('확인')
+  const cancelLabel = cancelText ?? t('닫기')
 
   useEffect(() => {
     setMounted(true)
@@ -65,7 +70,7 @@ export default function CommonModal({
         <LogoWrap>
           <Image
             src={systemLogo}
-            alt="SAD/SDD 문서 자동화 시스템"
+            alt={t('SAD/SDD 문서 자동화 시스템')}
             fill
             sizes="180px"
             priority
@@ -77,8 +82,8 @@ export default function CommonModal({
         <Detail>{detail}</Detail>
 
         <Actions>
-          <BtnPrimary onClick={onConfirm}>{confirmText}</BtnPrimary>
-          {canCancel && <BtnGhost onClick={onCancel}>{cancelText}</BtnGhost>}
+          <BtnPrimary onClick={onConfirm}>{confirmLabel}</BtnPrimary>
+          {canCancel && <BtnGhost onClick={onCancel}>{cancelLabel}</BtnGhost>}
         </Actions>
       </ModalWrap>
     </>

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import * as am4core from '@amcharts/amcharts4/core';
 import * as am4charts from '@amcharts/amcharts4/charts';
+import { useTranslation } from '@/app/services/i18n/LanguageProvider';
 
 /*
  * 01. 구분     : Library
@@ -29,6 +30,7 @@ const AmHeatmapChart = ({
   height = '300px',
 }: AmHeatmapChartProps) => {
   const chartRef = useRef<HTMLDivElement>(null);
+  const { t, lang } = useTranslation();
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -44,7 +46,7 @@ const AmHeatmapChart = ({
     let xAxis = chart.xAxes.push(new am4charts.CategoryAxis());
     xAxis.dataFields.category = 'categoryX';
     xAxis.renderer.labels.template.fontSize = fontSize;
-    xAxis.title.text = 'X 값';
+    xAxis.title.text = t('X 값');
     xAxis.renderer.grid.template.disabled = true; // ✅ X축 그리드 제거
     xAxis.renderer.minGridDistance = 0;
 
@@ -52,7 +54,7 @@ const AmHeatmapChart = ({
     let yAxis = chart.yAxes.push(new am4charts.CategoryAxis());
     yAxis.dataFields.category = 'categoryY';
     yAxis.renderer.labels.template.fontSize = fontSize;
-    yAxis.title.text = 'Y 값';
+    yAxis.title.text = t('Y 값');
     yAxis.renderer.grid.template.disabled = true; // ✅ Y축 그리드 제거
     yAxis.renderer.minGridDistance = 0;
 
@@ -104,7 +106,7 @@ const AmHeatmapChart = ({
     return () => {
       chart.dispose();
     };
-  }, [data, colorRange, fontSize]);
+  }, [data, colorRange, fontSize, t, lang]);
 
   return <div ref={chartRef} style={{ width, height }} />;
 };
