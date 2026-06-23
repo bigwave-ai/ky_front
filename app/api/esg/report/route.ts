@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPythonUrl, PYTHON_CONFIG } from '@/config/environment'
-import { getRouteSession, getScopedCustomerId, isAdminSession } from '@/app/services/util/api-auth'
+import { PYTHON_CONFIG } from '@/config/environment'
+import { isAdminSession } from '@/app/services/util/api-auth'
+import { jsonError, readJsonSafe, requireSession, resolvePythonUrl } from '@/app/api/_lib/bff'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -12,12 +13,11 @@ const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.s
  * 백엔드 POST /api/esg/report 는 customer_name(이름)으로 식별하고 무인증이므로,
  * BFF에서 테넌트를 강제한다: 비관리자는 본인 회사(세션 name)로 고정, 관리자만 요청 customer_name 사용.
  * 성공 시 백엔드의 xlsx 바이너리를 그대로(Content-Disposition 포함) 통과시킨다.
+ * (성공 응답이 바이너리라 JSON 기반 pythonFetch 대신 직접 fetch 사용)
  */
 export async function POST(request: NextRequest) {
-  const session = await getRouteSession(request)
-  if (!session) {
-    return NextResponse.json({ success: false, message: '로그인이 필요합니다.' }, { status: 401 })
-  }
+  const { session, error } = await requireSession(request)
+  if (error) return error
 
   try {
     const body = await request.json().catch(() => ({} as Record<string, any>))
@@ -27,24 +27,21 @@ export async function POST(request: NextRequest) {
     if (!isAdminSession(session)) {
       const ownName = String(session?.name ?? '').trim()
       if (!ownName) {
-        return NextResponse.json(
-          { success: false, message: '세션에 회사 정보가 없습니다. 다시 로그인해주세요.' },
-          { status: 403 },
-        )
+        return jsonError(403, '세션에 회사 정보가 없습니다. 다시 로그인해주세요.')
       }
       customerName = ownName
     }
     if (!customerName) {
-      return NextResponse.json({ success: false, message: '대상 고객사를 선택해주세요.' }, { status: 400 })
+      return jsonError(400, '대상 고객사를 선택해주세요.')
     }
 
     const periodStart = String(body?.period_start ?? '').trim()
     const periodEnd = String(body?.period_end ?? '').trim()
     if (!periodStart || !periodEnd) {
-      return NextResponse.json({ success: false, message: '보고서 기간을 입력해주세요.' }, { status: 400 })
+      return jsonError(400, '보고서 기간을 입력해주세요.')
     }
     if (periodEnd < periodStart) {
-      return NextResponse.json({ success: false, message: '종료일은 시작일 이후여야 합니다.' }, { status: 400 })
+      return jsonError(400, '종료일은 시작일 이후여야 합니다.')
     }
 
     const payload: Record<string, any> = {
@@ -63,13 +60,8 @@ export async function POST(request: NextRequest) {
       payload.baseline_total_kwh = baseline
     }
 
-    const backendUrl = getPythonUrl(PYTHON_CONFIG.ENDPOINTS.ESG_REPORT)
-    if (!backendUrl) {
-      return NextResponse.json(
-        { success: false, message: 'Python API URL이 설정되지 않았습니다. (.env 확인 필요)' },
-        { status: 500 },
-      )
-    }
+    const { url: backendUrl, error: urlError } = resolvePythonUrl(PYTHON_CONFIG.ENDPOINTS.ESG_REPORT)
+    if (urlError) return urlError
 
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 120_000)
@@ -83,11 +75,8 @@ export async function POST(request: NextRequest) {
     clearTimeout(timeoutId)
 
     if (!response.ok) {
-      const err = await response.json().catch(() => null)
-      return NextResponse.json(
-        { success: false, message: err?.detail ?? `ESG 보고서 생성 실패 (${response.status})` },
-        { status: response.status },
-      )
+      const err = await readJsonSafe(response)
+      return jsonError(response.status, err?.detail ?? `ESG 보고서 생성 실패 (${response.status})`)
     }
 
     const buf = await response.arrayBuffer()
@@ -105,15 +94,12 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     const aborted = error?.name === 'AbortError'
-    return NextResponse.json(
-      {
-        success: false,
-        message: aborted
-          ? 'ESG 보고서 생성 시간이 초과되었습니다.'
-          : 'ESG 보고서 프록시 처리 중 오류가 발생했습니다.',
-        details: error?.message ?? 'Unknown error',
-      },
-      { status: aborted ? 504 : 500 },
+    return jsonError(
+      aborted ? 504 : 500,
+      aborted
+        ? 'ESG 보고서 생성 시간이 초과되었습니다.'
+        : 'ESG 보고서 프록시 처리 중 오류가 발생했습니다.',
+      error?.message ?? 'Unknown error',
     )
   }
 }

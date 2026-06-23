@@ -1,7 +1,8 @@
-/* c:\Users\USER\Desktop\bigwave\케이와이\program\kyfront_2026_03_23\app\api\simulate\predict\route.ts */
+/* app/api/simulate/predict/route.ts */
 import { NextRequest, NextResponse } from 'next/server'
-import { getPythonUrl, PYTHON_CONFIG } from '@/config/environment'
-import { canAccessDevice, getRouteSession } from '@/app/services/util/api-auth'
+import { PYTHON_CONFIG } from '@/config/environment'
+import { canAccessDevice } from '@/app/services/util/api-auth'
+import { jsonError, pythonFetch, requireSession, resolvePythonUrl } from '@/app/api/_lib/bff'
 
 /*
  * 01. 구분     : API Route (App Router)
@@ -15,20 +16,10 @@ import { canAccessDevice, getRouteSession } from '@/app/services/util/api-auth'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const readJsonSafe = async (response: Response): Promise<any | null> => {
-  try {
-    return await response.json()
-  } catch {
-    return null
-  }
-}
-
 export async function POST(request: NextRequest) {
   // 세션 검증: 로그인 사용자만 실행 가능
-  const session = await getRouteSession(request)
-  if (!session) {
-    return NextResponse.json({ success: false, message: '로그인이 필요합니다.' }, { status: 401 })
-  }
+  const { session, error } = await requireSession(request)
+  if (error) return error
 
   try {
     const body = await request.json()
@@ -47,49 +38,31 @@ export async function POST(request: NextRequest) {
         : {}
 
     if (!deviceId) {
-      return NextResponse.json(
-        { success: false, message: 'device_id가 필요합니다.' },
-        { status: 400 },
-      )
+      return jsonError(400, 'device_id가 필요합니다.')
     }
 
     // 소유권 검증: 비관리자는 본인 고객사 장비만 사용 가능 (IDOR 방지)
     const access = await canAccessDevice(session, deviceId)
     if (!access.ok) {
-      return NextResponse.json({ success: false, message: access.message }, { status: access.status })
+      return jsonError(access.status, access.message)
     }
 
     if (!Number.isInteger(lookbackHours) || lookbackHours < 1 || lookbackHours > 744) {
-      return NextResponse.json(
-        { success: false, message: 'lookback_hours는 1~744 사이의 정수여야 합니다.' },
-        { status: 400 },
-      )
+      return jsonError(400, 'lookback_hours는 1~744 사이의 정수여야 합니다.')
     }
 
     if (!baseTimestamp) {
-      return NextResponse.json(
-        { success: false, message: 'base_timestamp가 필요합니다.' },
-        { status: 400 },
-      )
+      return jsonError(400, 'base_timestamp가 필요합니다.')
     }
 
     if (!Number.isFinite(baseLogId)) {
-      return NextResponse.json(
-        { success: false, message: 'base_log_id가 필요합니다.' },
-        { status: 400 },
-      )
+      return jsonError(400, 'base_log_id가 필요합니다.')
     }
 
-    const backendUrl = getPythonUrl(PYTHON_CONFIG.ENDPOINTS.SIMULATION_PREDICT)
-    if (!backendUrl) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Python API URL이 설정되지 않았습니다. (.env 확인 필요)',
-        },
-        { status: 500 },
-      )
-    }
+    const { url: backendUrl, error: urlError } = resolvePythonUrl(
+      PYTHON_CONFIG.ENDPOINTS.SIMULATION_PREDICT,
+    )
+    if (urlError) return urlError
 
     const payload = {
       device_id: deviceId,
@@ -99,45 +72,31 @@ export async function POST(request: NextRequest) {
       base_log_id: baseLogId,
     }
 
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 60_000)
+    const { response, data } = await pythonFetch(backendUrl, {
+      method: 'POST',
+      body: payload,
+      timeoutMs: 60_000,
+    })
 
-    try {
-      const response = await fetch(backendUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-        cache: 'no-store',
-      })
-
-      const data = await readJsonSafe(response)
-
-      if (!response.ok) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: data?.message ?? `Python API 요청 실패 (${response.status})`,
-            details: data,
-          },
-          { status: response.status },
-        )
-      }
-
-      return NextResponse.json(data ?? { success: false, message: '응답 파싱 실패' }, {
-        status: data ? 200 : 502,
-      })
-    } finally {
-      clearTimeout(timeoutId)
+    if (!response.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: data?.message ?? `Python API 요청 실패 (${response.status})`,
+          details: data,
+        },
+        { status: response.status },
+      )
     }
+
+    return NextResponse.json(data ?? { success: false, message: '응답 파싱 실패' }, {
+      status: data ? 200 : 502,
+    })
   } catch (error: any) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: '시뮬레이션 예측 프록시 처리 중 서버 오류가 발생했습니다.',
-        details: error?.message ?? 'Unknown error',
-      },
-      { status: 500 },
+    return jsonError(
+      500,
+      '시뮬레이션 예측 프록시 처리 중 서버 오류가 발생했습니다.',
+      error?.message ?? 'Unknown error',
     )
   }
 }

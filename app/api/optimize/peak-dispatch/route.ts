@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPythonUrl, PYTHON_CONFIG } from '@/config/environment'
-import { getRouteSession, getScopedCustomerId } from '@/app/services/util/api-auth'
+import { PYTHON_CONFIG } from '@/config/environment'
+import { getScopedCustomerId } from '@/app/services/util/api-auth'
+import { jsonError, pythonFetch, requireSession, resolvePythonUrl } from '@/app/api/_lib/bff'
 
 /*
  * 01. 구분     : API Route (App Router)
@@ -14,20 +15,10 @@ import { getRouteSession, getScopedCustomerId } from '@/app/services/util/api-au
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const readJsonSafe = async (response: Response): Promise<any | null> => {
-  try {
-    return await response.json()
-  } catch {
-    return null
-  }
-}
-
 export async function POST(request: NextRequest) {
   // 세션 검증: 로그인 사용자만 실행 가능
-  const session = await getRouteSession(request)
-  if (!session) {
-    return NextResponse.json({ success: false, message: '로그인이 필요합니다.' }, { status: 401 })
-  }
+  const { session, error } = await requireSession(request)
+  if (error) return error
 
   try {
     const body = await request.json()
@@ -37,46 +28,25 @@ export async function POST(request: NextRequest) {
     const scopedCustomerId = getScopedCustomerId(session)
     if (scopedCustomerId !== null) {
       if (!scopedCustomerId) {
-        return NextResponse.json(
-          { success: false, message: '세션에 고객사 정보가 없습니다. 다시 로그인해주세요.' },
-          { status: 403 },
-        )
+        return jsonError(403, '세션에 고객사 정보가 없습니다. 다시 로그인해주세요.')
       }
       const requestedCustomerId = String(body?.customer_id ?? '').trim()
       if (requestedCustomerId && requestedCustomerId !== scopedCustomerId) {
-        return NextResponse.json(
-          { success: false, message: '본인 고객사에 대해서만 실행할 수 있습니다.' },
-          { status: 403 },
-        )
+        return jsonError(403, '본인 고객사에 대해서만 실행할 수 있습니다.')
       }
       body.customer_id = scopedCustomerId
     }
 
-    const backendUrl = getPythonUrl(PYTHON_CONFIG.ENDPOINTS.PEAK_DISPATCH_OPTIMIZE)
-    if (!backendUrl) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Python API URL이 설정되지 않았습니다. (.env 확인 필요)',
-        },
-        { status: 500 },
-      )
-    }
+    const { url: backendUrl, error: urlError } = resolvePythonUrl(
+      PYTHON_CONFIG.ENDPOINTS.PEAK_DISPATCH_OPTIMIZE,
+    )
+    if (urlError) return urlError
 
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 60_000)
-
-    const response = await fetch(backendUrl, {
+    const { response, data } = await pythonFetch(backendUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-      cache: 'no-store',
+      body,
+      timeoutMs: 60_000,
     })
-
-    clearTimeout(timeoutId)
-
-    const data = await readJsonSafe(response)
 
     if (!response.ok) {
       return NextResponse.json(
@@ -93,13 +63,10 @@ export async function POST(request: NextRequest) {
       status: data ? 200 : 502,
     })
   } catch (error: any) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'MILP 프록시 처리 중 서버 오류가 발생했습니다.',
-        details: error?.message ?? 'Unknown error',
-      },
-      { status: 500 },
+    return jsonError(
+      500,
+      'MILP 프록시 처리 중 서버 오류가 발생했습니다.',
+      error?.message ?? 'Unknown error',
     )
   }
 }
