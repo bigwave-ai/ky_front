@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPythonUrl, PYTHON_CONFIG } from '@/config/environment'
-import { getRouteSession, getScopedCustomerId } from '@/app/services/util/api-auth'
+import { PYTHON_CONFIG } from '@/config/environment'
+import { getScopedCustomerId } from '@/app/services/util/api-auth'
+import { jsonError, pythonFetch, requireSession, resolvePythonUrl } from '@/app/api/_lib/bff'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -17,34 +18,22 @@ type EsgCustomer = {
  * - 일반 사용자: 본인 고객사만(테넌트 격리) — 백엔드가 무인증이라 BFF에서 강제 스코프
  */
 export async function GET(request: NextRequest) {
-  const session = await getRouteSession(request)
-  if (!session) {
-    return NextResponse.json({ success: false, message: '로그인이 필요합니다.' }, { status: 401 })
-  }
+  const { session, error } = await requireSession(request)
+  if (error) return error
 
   try {
-    const backendUrl = getPythonUrl(PYTHON_CONFIG.ENDPOINTS.ESG_CUSTOMERS)
-    if (!backendUrl) {
-      return NextResponse.json(
-        { success: false, message: 'Python API URL이 설정되지 않았습니다. (.env 확인 필요)' },
-        { status: 500 },
-      )
-    }
+    const { url: backendUrl, error: urlError } = resolvePythonUrl(PYTHON_CONFIG.ENDPOINTS.ESG_CUSTOMERS)
+    if (urlError) return urlError
 
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 30_000)
-    const response = await fetch(`${backendUrl}?limit=500`, {
+    const { response, data: raw } = await pythonFetch(`${backendUrl}?limit=500`, {
       method: 'GET',
-      cache: 'no-store',
-      signal: controller.signal,
+      timeoutMs: 30_000,
     })
-    clearTimeout(timeoutId)
 
-    const raw = await response.json().catch(() => null)
     if (!response.ok || !Array.isArray(raw)) {
-      return NextResponse.json(
-        { success: false, message: raw?.detail ?? `고객사 목록 조회 실패 (${response.status})` },
-        { status: response.ok ? 502 : response.status },
+      return jsonError(
+        response.ok ? 502 : response.status,
+        raw?.detail ?? `고객사 목록 조회 실패 (${response.status})`,
       )
     }
 
@@ -64,13 +53,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: list })
   } catch (error: any) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'ESG 고객사 목록 프록시 처리 중 오류가 발생했습니다.',
-        details: error?.message ?? 'Unknown error',
-      },
-      { status: 500 },
+    return jsonError(
+      500,
+      'ESG 고객사 목록 프록시 처리 중 오류가 발생했습니다.',
+      error?.message ?? 'Unknown error',
     )
   }
 }
