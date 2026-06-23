@@ -30,6 +30,7 @@ ADMIN_ID, ADMIN_PW = "admin", base64.b64encode(b"admin").decode()
 MEMBER_ID, MEMBER_PW = "(주) 유니켐", base64.b64encode(b"1234").decode()
 MEMBER_CID = "7066135d-819d-5ffc-a1cf-9cea2f82b133"   # 유니켐(본인)
 OTHER_CID = "0af43a3e-43e0-5342-bc46-97c2a00d94d9"    # 금창(타 고객 — IDOR 대상)
+OTHER_DEVICE = "017cb073-9141-5b31-9be7-d43cadd7d40e"  # 청아냉동 소속(유니켐 아님 — BFF 프록시 IDOR 대상)
 
 
 def _skeleton(obj):
@@ -153,6 +154,20 @@ def run_all():
     # 7) member → admin API (403 기대)
     res, _ = _req(mem_op, "GET", "/api/admin/getCustomers")
     out["member_access_admin_api"] = {"status": res["status"]}
+
+    # --- BFF 프록시 라우트(Python 백엔드 프록시) characterization: F2 리팩토링 안전망 ---
+    # 9) member → ESG 고객사(테넌트 스코프, 200·본인고객만)
+    res, _ = _req(mem_op, "GET", "/api/esg/customers")
+    out["proxy_member_esg_customers"] = res
+    # 10) 미인증 → ESG 고객사 (401 기대)
+    res, _ = _req(noauth_op, "GET", "/api/esg/customers")
+    out["proxy_noauth_esg_customers"] = {"status": res["status"]}
+    # 11) BFF 프록시 IDOR: member → 타 고객 장비 대시보드 (403 기대, canAccessDevice)
+    res, _ = _req(mem_op, "GET", "/api/monitor/dashboard/%s?lookback_hours=24" % OTHER_DEVICE)
+    out["proxy_member_idor_dashboard"] = {"status": res["status"]}
+    # 12) 미인증 → 장비 대시보드 (401 기대)
+    res, _ = _req(noauth_op, "GET", "/api/monitor/dashboard/%s?lookback_hours=24" % OTHER_DEVICE)
+    out["proxy_noauth_dashboard"] = {"status": res["status"]}
 
     # 8) 로그아웃
     res, _ = _req(mem_op, "POST", "/api/auth/deleteCookies")
