@@ -8,6 +8,7 @@ import WarningModal from '@/app/components/libs/modals/modal-warnning'
 import { MuiCalendar } from '@/app/components/libs/muis/mui-input-group'
 import { withAppPrefix } from '@/config/environment'
 import { useTranslation } from '@/app/services/i18n/LanguageProvider'
+import { getSessionUserInfo } from '@/app/services/util/session-info'
 
 /* ===== 세션(로그인 사용자) 정보 ===== */
 type SessionUserInfoType = {
@@ -17,35 +18,7 @@ type SessionUserInfoType = {
   isAdmin: boolean
 }
 
-const getSessionUserInfo = (): SessionUserInfoType => {
-  if (typeof window === 'undefined') {
-    return { customerId: '', customerName: '', role: '', isAdmin: false }
-  }
-  const raw = localStorage.getItem('session.userInfo')
-  if (!raw) {
-    return { customerId: '', customerName: '', role: '', isAdmin: false }
-  }
-  try {
-    const parsed = JSON.parse(raw) as {
-      customer_id?: string
-      customerId?: string
-      name?: string
-      customer_name?: string
-      role?: string
-      customer_auth?: string
-      auth?: string
-    }
-    const customerId = String(parsed.customer_id ?? parsed.customerId ?? '').trim()
-    const customerName = String(parsed.name ?? parsed.customer_name ?? '').trim()
-    const roleRaw = String(parsed.role ?? parsed.customer_auth ?? parsed.auth ?? '')
-      .trim()
-      .toLowerCase()
-    const isAdmin = roleRaw === 'admin' || roleRaw.includes('admin') || roleRaw.includes('관리')
-    return { customerId, customerName, role: roleRaw, isAdmin }
-  } catch {
-    return { customerId: '', customerName: '', role: '', isAdmin: false }
-  }
-}
+// 세션 파싱은 공유 유틸로 통합: @/app/services/util/session-info (getSessionUserInfo)
 
 /* ===== 타입 ===== */
 type CustomerOptionType = { customer_id: string; customer_name: string }

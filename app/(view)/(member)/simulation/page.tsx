@@ -12,6 +12,7 @@ import CommonHorizontalBar, {
 } from '@/app/components/libs/charts/common/common-horizontal-bar'
 import { withAppPrefix } from '@/config/environment'
 import { useTranslation } from '@/app/services/i18n/LanguageProvider'
+import { getSessionUserInfo } from '@/app/services/util/session-info'
 
 /*
  * 01. 구분     : Page 컴포넌트
@@ -202,39 +203,7 @@ const safeNum = (value: unknown, fallback = 0) => {
   return Number.isFinite(n) ? n : fallback
 }
 
-// 세션에서 customer_id + role 추출
-const getSessionUserInfo = (): SessionUserInfoType => {
-  if (typeof window === 'undefined') {
-    return { customerId: '', role: '', isAdmin: false }
-  }
-
-  const raw = localStorage.getItem('session.userInfo')
-  if (!raw) {
-    return { customerId: '', role: '', isAdmin: false }
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as {
-      customer_id?: string
-      customerId?: string
-      role?: string
-      customer_auth?: string
-      auth?: string
-    }
-
-    const customerId = String(parsed.customer_id ?? parsed.customerId ?? '').trim()
-    const roleRaw = String(parsed.role ?? parsed.customer_auth ?? parsed.auth ?? '').trim().toLowerCase()
-
-    const isAdmin =
-      roleRaw === 'admin' ||
-      roleRaw.includes('admin') ||
-      roleRaw.includes('관리')
-
-    return { customerId, role: roleRaw, isAdmin }
-  } catch {
-    return { customerId: '', role: '', isAdmin: false }
-  }
-}
+// 세션 파싱은 공유 유틸로 통합: @/app/services/util/session-info (getSessionUserInfo)
 
 // 관리자 고객사 목록 조회
 const fetchAdminCustomers = async (): Promise<AdminCustomerOptionType[]> => {
