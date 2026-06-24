@@ -518,6 +518,8 @@ export default function SimulationPage() {
   const [conditionRows, setConditionRows] = useState<ConditionRowType[]>([])
   const [conditionValues, setConditionValues] = useState<Record<string, number>>({})
   const [initialConditionValues, setInitialConditionValues] = useState<Record<string, number>>({})
+  // 조건 숫자 직접입력 초안(타이핑 중엔 자유입력, blur/Enter 시 클램프·스텝반올림 커밋)
+  const [conditionInputDrafts, setConditionInputDrafts] = useState<Record<string, string>>({})
 
   const [templateContext, setTemplateContext] = useState<TemplateContextType | null>(null)
   const [resultData, setResultData] = useState<SimulationResultType | null>(null)
@@ -619,6 +621,20 @@ export default function SimulationPage() {
     const clamped = clamp(value, row.min, row.max)
     const rounded = roundToStep(clamped, row.step, row.digits)
     setConditionValues((prev) => ({ ...prev, [key]: rounded }))
+  }
+
+  // 숫자 입력창 커밋: 초안 텍스트 → 파싱 → handleConditionChange(클램프/스텝반올림) → 초안 비움.
+  // 비우면 input value 가 다시 conditionValues(클램프된 값)로 되돌아가 슬라이더와 동기화된다.
+  const commitConditionInput = (key: string) => {
+    const draft = conditionInputDrafts[key]
+    setConditionInputDrafts((prev) => {
+      const next = { ...prev }
+      delete next[key]
+      return next
+    })
+    if (draft === undefined || draft.trim() === '') return
+    const parsed = Number(draft)
+    if (Number.isFinite(parsed)) handleConditionChange(key, parsed)
   }
 
   const buildOverrides = () => {
@@ -1098,6 +1114,34 @@ export default function SimulationPage() {
                             }}
                           />
                         </div>
+
+                        {/* 직접 숫자 입력(슬라이더로 정밀값 맞추기 어려운 경우). blur/Enter 시 범위/스텝 보정 */}
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          aria-label={`${t(row.label)} 직접 입력`}
+                          min={row.min}
+                          max={row.max}
+                          step={row.step}
+                          value={conditionInputDrafts[row.key] ?? String(currentValue)}
+                          onChange={(e) =>
+                            setConditionInputDrafts((prev) => ({ ...prev, [row.key]: e.target.value }))
+                          }
+                          onBlur={() => commitConditionInput(row.key)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                          }}
+                          style={{
+                            width: '96px',
+                            marginTop: '8px',
+                            padding: '5px 8px',
+                            border: '1px solid #ced7ef',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            textAlign: 'right',
+                            justifySelf: 'end',
+                          }}
+                        />
                       </div>
                     </div>
                   )
