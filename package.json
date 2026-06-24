@@ -44,7 +44,6 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-draggable": "^4.4.6",
-    "recoil": "^0.7.7",
     "sqlite3": "^6.0.1",
     "styled-components": "^6.0.7",
     "typescript": "5.2.2",

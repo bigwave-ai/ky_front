@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { RecoilRoot } from 'recoil';
 import { Provider as JotaiProvider } from 'jotai';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import useQueryError from '../services/hooks/user-query-error';
@@ -48,9 +47,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <RecoilRoot>
-        <JotaiProvider>{children}</JotaiProvider>
-      </RecoilRoot>
+      <JotaiProvider>{children}</JotaiProvider>
     </QueryClientProvider>
   );
 }
