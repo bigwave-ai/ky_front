@@ -10,10 +10,12 @@ import { getRouteSession } from '@/app/services/util/api-auth'
  * 각 라우트의 검증·후처리·에러 메시지/형태는 호출부가 그대로 유지(동작보존).
  */
 
-/** 응답 JSON 안전 파싱(실패 시 null). 기존 각 라우트 로컬 readJsonSafe 통합. */
-export async function readJsonSafe(response: Response): Promise<any | null> {
+/** 응답 JSON 안전 파싱(실패 시 null). 기존 각 라우트 로컬 readJsonSafe 통합.
+ *  T 는 호출부가 지정하는 응답 계약(app/models/api/responses) — 런타임 검증이 아닌 타입 단언.
+ *  기본값 any: BFF 라우트는 성공·에러 응답을 같은 data로 다뤄(에러 .message 접근) 성공타입 강제 불가. */
+export async function readJsonSafe<T = any>(response: Response): Promise<T | null> {
   try {
-    return await response.json()
+    return (await response.json()) as T
   } catch {
     return null
   }
@@ -51,10 +53,10 @@ export function resolvePythonUrl(path: string): { url: string; error: null } | {
  * Python 백엔드 호출(AbortController 타임아웃 + cache:no-store + 안전파싱).
  * 반환 {response, data} — !response.ok 등 라우트별 처리는 호출부가 수행(동작보존).
  */
-export async function pythonFetch(
+export async function pythonFetch<T = any>(
   url: string,
   opts: { method?: string; body?: unknown; timeoutMs?: number; headers?: Record<string, string> } = {},
-): Promise<{ response: Response; data: any | null }> {
+): Promise<{ response: Response; data: T | null }> {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), opts.timeoutMs ?? 60_000)
   try {
@@ -69,7 +71,7 @@ export async function pythonFetch(
         ...(opts.headers ?? {}),
       },
     })
-    const data = await readJsonSafe(response)
+    const data = await readJsonSafe<T>(response)
     return { response, data }
   } finally {
     clearTimeout(timeoutId)

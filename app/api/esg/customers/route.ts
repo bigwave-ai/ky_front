@@ -2,15 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PYTHON_CONFIG } from '@/config/environment'
 import { getScopedCustomerId } from '@/app/services/util/api-auth'
 import { jsonError, pythonFetch, requireSession, resolvePythonUrl } from '@/app/api/_lib/bff'
+import type { EsgCustomer } from '@/app/models/api/responses'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-
-type EsgCustomer = {
-  customer_id: string
-  customer_name: string
-  customer_user_id?: string | null
-}
 
 /**
  * ESG 보고서용 고객사 목록.
