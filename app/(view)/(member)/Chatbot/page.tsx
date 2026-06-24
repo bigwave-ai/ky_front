@@ -817,7 +817,7 @@ export default function ChatbotPage() {
         <article className={cbc.chat_panel}>
           <div className={cbc.chat_head}>
             <h2>AI Chat</h2>
-            <p>{t('케이와이 AI Aent Chatbot 입니다.')}</p>
+            <p>{t('케이와이 AI Agent Chatbot 입니다.')}</p>
           </div>
 
           <p className={cbc.chat_subTitle}>{t('궁금하신 사항을 질의해주세요.')}</p>

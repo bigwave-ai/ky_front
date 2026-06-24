@@ -379,7 +379,7 @@ export const dictionary: Record<string, string> = {
   "컴프레셔 추가 중 오류가 발생했습니다.": "An error occurred while adding the compressor.",
   "컴프레셔 현황 관리 시스템": "Compressor Status Management System",
   "컴프레셔에 대한 정보를 검색해주세요.": "Search for compressor information.",
-  "케이와이 AI Aent Chatbot 입니다.": "This is the KY AI Agent Chatbot.",
+  "케이와이 AI Agent Chatbot 입니다.": "This is the KY AI Agent Chatbot.",
   "케이와이 통합 AI 챗봇 입니다. 무엇이든 물어보세요.": "This is the KY Integrated AI Chatbot. Ask anything.",
   "특성명": "Feature Name",
   "편집": "Edit",
