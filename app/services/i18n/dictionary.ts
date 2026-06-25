@@ -78,7 +78,7 @@ export const dictionary: Record<string, string> = {
   "*고객사가 입력이 되지 않았습니다.": "*Customer has not been entered.",
   "*담당자 명가 입력이 되지 않았습니다.": "*Manager name has not been entered.",
   "*담당자 연락처가 입력이 되지 않았습니다.": "*Manager phone has not been entered.",
-  "*담당자 연락처는 11자리 숫자를 입력해주세요.": "*Manager phone must be 11 digits.",
+  "*담당자 연락처는 10~11자리 숫자를 입력해주세요.": "*Manager phone must be 10 or 11 digits.",
   "*담당자 이메일 형식이 올바르지 않습니다. (@ 포함)": "*Manager email format is invalid. (must include @)",
   "*담당자 이메일가 입력이 되지 않았습니다.": "*Manager email has not been entered.",
   "*데이터 타입을 선택해주세요.": "*Please select a data type.",

@@ -43,8 +43,15 @@ const onlyDigits = (value: string) => value.replace(/\D/g, '')
 
 const formatPhone = (value: string) => {
   const digits = onlyDigits(value).slice(0, 11)
-  if (digits.length !== 11) return value
-  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`
+  // 11자리(휴대폰 등): 3-4-4
+  if (digits.length === 11) return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`
+  // 10자리: 02(서울) 2-4-4, 그 외 지역번호 3-3-4
+  if (digits.length === 10) {
+    return digits.startsWith('02')
+      ? `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6)}`
+      : `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`
+  }
+  return value
 }
 
 export default async function handler(
@@ -94,10 +101,10 @@ export default async function handler(
       })
     }
 
-    if (managerPhoneRaw && onlyDigits(managerPhoneRaw).length !== 11) {
+    if (managerPhoneRaw && ![10, 11].includes(onlyDigits(managerPhoneRaw).length)) {
       return res.status(400).json({
         success: false,
-        message: '연락처는 11자리 숫자를 입력해주세요.',
+        message: '연락처는 10~11자리 숫자를 입력해주세요.',
       })
     }
 

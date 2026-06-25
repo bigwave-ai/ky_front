@@ -53,9 +53,17 @@ const onlyNumber = (value: string) => value.replace(/\D/g, '');
 
 const formatPhone = (value: string) => {
   const digits = onlyNumber(value).slice(0, 11);
+  // 완성형: 11자리 3-4-4, 10자리 02(서울)→2-4-4 / 그 외 지역번호 3-3-4
+  if (digits.length === 11) return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+  if (digits.length === 10) {
+    return digits.startsWith('02')
+      ? `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6)}`
+      : `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  // 입력 중(부분 자리수)
   if (digits.length <= 3) return digits;
   if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
-  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
 };
 
 type Translate = (text: string) => string;
@@ -82,8 +90,8 @@ const validateForm = (form: AddCompanyFormType, t: Translate): AddCompanyErrorsT
 
   if (!errors.managerPhone) {
     const phoneDigits = onlyNumber(form.managerPhone);
-    if (phoneDigits.length !== 11) {
-      errors.managerPhone = t('*담당자 연락처는 11자리 숫자를 입력해주세요.');
+    if (phoneDigits.length !== 10 && phoneDigits.length !== 11) {
+      errors.managerPhone = t('*담당자 연락처는 10~11자리 숫자를 입력해주세요.');
     }
   }
 

@@ -62,9 +62,17 @@ const onlyNumber = (value: string) => value.replace(/\D/g, '');
 
 const formatPhone = (value: string) => {
   const digits = onlyNumber(value).slice(0, 11);
+  // 완성형: 11자리 3-4-4, 10자리 02(서울)→2-4-4 / 그 외 지역번호 3-3-4
+  if (digits.length === 11) return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+  if (digits.length === 10) {
+    return digits.startsWith('02')
+      ? `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6)}`
+      : `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  // 입력 중(부분 자리수)
   if (digits.length <= 3) return digits;
   if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
-  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
 };
 
 const requiredMessage = (label: string) => `*${label}가 입력이 되지 않았습니다.`;
@@ -79,8 +87,8 @@ const validateForm = (form: UpdateCompanyFormType): UpdateCompanyErrorsType => {
 
   // 연락처/이메일은 "값이 입력된 경우에만" 형식 검증(빈 값은 허용)
   const phone = form.managerPhone.trim();
-  if (phone && onlyNumber(phone).length !== 11) {
-    errors.managerPhone = '*담당자 연락처는 11자리 숫자를 입력해주세요.';
+  if (phone && ![10, 11].includes(onlyNumber(phone).length)) {
+    errors.managerPhone = '*담당자 연락처는 10~11자리 숫자를 입력해주세요.';
   }
 
   const email = form.managerEmail.trim();
