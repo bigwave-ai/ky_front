@@ -445,4 +445,12 @@ export const dictionary: Record<string, string> = {
   "현재": "Now",
   "15분 후": "+15 min",
   "30분 후": "+30 min",
+  "셰이빙 권고": "Shaving Suggested",
+  "셰이빙 권고 장비": "Shaving Targets",
+  "목표 이내": "Within Target",
+  "총 절감 가능 전력": "Total Shavable Power",
+  "자동 목표선 셰이빙": "Auto Target Shaving",
+  "목표 미설정 장비는 최근 피크에서 이 비율만큼 낮춰 자동 적용":
+    "Unset devices auto-apply a target shaved by this ratio from the recent peak.",
+  "절감 가능": "Shavable",
 }

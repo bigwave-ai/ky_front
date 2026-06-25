@@ -116,6 +116,7 @@ export default function PeakShavingPage() {
   const customerComboRef = useRef<HTMLDivElement | null>(null)
 
   // 목표선
+  const [autoShavePct, setAutoShavePct] = useState(10) // 자동 목표선 셰이빙 비율(%)
   const [companyTargetInput, setCompanyTargetInput] = useState('')
   const [savedCompanyTarget, setSavedCompanyTarget] = useState<number | null>(null)
   const [deviceTargets, setDeviceTargets] = useState<Record<string, number>>({})
@@ -171,9 +172,9 @@ export default function PeakShavingPage() {
 
   const donutLegend: CommonDonutEquipmentItem[] = useMemo(
     () => [
-      { label: t('정상'), value: normalCount, color: '#2bb673', unit: t('대') },
+      { label: t('목표 이내'), value: normalCount, color: '#2bb673', unit: t('대') },
       { label: t('주의'), value: warningCount, color: '#e9a24f', unit: t('대') },
-      { label: t('목표 초과'), value: exceedCount, color: '#d14343', unit: t('대') },
+      { label: t('셰이빙 권고'), value: exceedCount, color: '#1a78b0', unit: t('대') },
     ],
     [normalCount, warningCount, exceedCount, t],
   )
@@ -194,9 +195,9 @@ export default function PeakShavingPage() {
 
   /******************** 표시 헬퍼 ********************/
   const STATUS_META: Record<string, { label: string; cls: string }> = {
-    exceed: { label: t('목표 초과'), cls: mmc.peak_badgeExceed },
+    exceed: { label: t('셰이빙 권고'), cls: mmc.peak_badgeExceed },
     warning: { label: t('주의'), cls: mmc.peak_badgeWarning },
-    normal: { label: t('정상'), cls: mmc.peak_badgeNormal },
+    normal: { label: t('목표 이내'), cls: mmc.peak_badgeNormal },
     unknown: { label: t('목표선 미설정'), cls: mmc.peak_badgeUnknown },
   }
   const ACTION_META: Record<string, string> = {
@@ -303,7 +304,7 @@ export default function PeakShavingPage() {
       const res = await fetch(withAppPrefix('/api/optimize/peak-dispatch'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lookback_hours: 24, customer_id: customerId }),
+        body: JSON.stringify({ lookback_hours: 24, customer_id: customerId, auto_shave_pct: autoShavePct }),
       })
       const json = await res.json().catch(() => null)
       if (!res.ok) {
@@ -496,6 +497,23 @@ export default function PeakShavingPage() {
                 )}
               </div>
 
+              <div className={mmc.peak_targetField}>
+                <span className={mmc.peak_fieldLabel}>{t('자동 목표선 셰이빙')}</span>
+                <div className={mmc.peak_targetInputRow}>
+                  <input
+                    className={mmc.peak_numberInputSm}
+                    type="number"
+                    min={0}
+                    max={90}
+                    step={5}
+                    value={autoShavePct}
+                    onChange={(e) => setAutoShavePct(Math.max(0, Math.min(90, Number(e.target.value) || 0)))}
+                  />
+                  <span className={mmc.peak_unit}>%</span>
+                </div>
+                <span className={mmc.peak_fieldHint}>{t('목표 미설정 장비는 최근 피크에서 이 비율만큼 낮춰 자동 적용')}</span>
+              </div>
+
               <button type="button" className={mmc.peak_runBtn} onClick={runDiagnosis} disabled={isRunning}>
                 {isRunning ? t('진단 중..') : t('피크 진단 실행')}
               </button>
@@ -516,12 +534,12 @@ export default function PeakShavingPage() {
                   <span className={mmc.peak_kpiLabel}>{t('분석 장비')}</span>
                   <strong className={mmc.peak_kpiValue}>{result.device_count}<small>{t('대')}</small></strong>
                 </article>
-                <article className={`${mmc.peak_kpiCard} ${mmc.peak_kpiCardDanger} ${mmc.peak_stageFadeUp}`}>
-                  <span className={mmc.peak_kpiLabel}>{t('목표 초과 장비')}</span>
+                <article className={`${mmc.peak_kpiCard} ${mmc.peak_kpiCardBlue} ${mmc.peak_stageFadeUp}`}>
+                  <span className={mmc.peak_kpiLabel}>{t('셰이빙 권고 장비')}</span>
                   <strong className={mmc.peak_kpiValue}>{exceedCount}<small>{t('대')}</small></strong>
                 </article>
                 <article className={`${mmc.peak_kpiCard} ${mmc.peak_stageFadeUp}`}>
-                  <span className={mmc.peak_kpiLabel}>{t('총 초과 전력')}</span>
+                  <span className={mmc.peak_kpiLabel}>{t('총 절감 가능 전력')}</span>
                   <strong className={mmc.peak_kpiValue}>{toNumber(totalOver).toFixed(1)}<small>kW</small></strong>
                 </article>
                 <article className={`${mmc.peak_kpiCard} ${mmc.peak_kpiCardBlue} ${mmc.peak_stageFadeUp}`}>
@@ -605,7 +623,7 @@ export default function PeakShavingPage() {
                             <div className={mmc.peak_actionMeta}>
                               <span>{t('예측')} {fmtKw(Math.max(d.baseline_15, d.baseline_30))}</span>
                               <span>{t('목표')} {fmtKw(d.threshold)}</span>
-                              {over > 0 && <span className={mmc.peak_overTag}>▲ {t('초과')} {fmtKw(over)}</span>}
+                              {over > 0 && <span className={mmc.peak_overTag}>↓ {t('절감 가능')} {fmtKw(over)}</span>}
                             </div>
                             <CommonHorizontalBar items={[{ label: t('목표 대비 부하'), rate: loadRate }]} />
                             <div className={mmc.peak_actionText}>

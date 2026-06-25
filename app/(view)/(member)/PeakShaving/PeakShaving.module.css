@@ -1185,7 +1185,7 @@
   color: #fff;
 }
 .peak_badgeExceed {
-  background: #d14343;
+  background: #1a78b0;
 }
 .peak_badgeWarning {
   background: #e9a24f;
@@ -1227,7 +1227,7 @@
   flex-wrap: wrap;
 }
 .peak_overTag {
-  color: #d14343;
+  color: #1a78b0;
   font-weight: 800;
 }
 .peak_actionText {
