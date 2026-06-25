@@ -29,7 +29,6 @@ type EffDeviceType = {
   status: 'good' | 'watch' | 'poor' | 'idle'
   rank: number
   load_share_pct: number
-  health_score: number
 }
 type DistributionType = {
   run_priority: string[]
@@ -331,7 +330,6 @@ export default function PeakShavingPage() {
                         <span className={mmc.peak_driveChip}>{d.drive_mode}</span>
                       </div>
                       <div className={mmc.peak_actionMeta}>
-                        <span>{t('건강')} <b>{d.health_score}{t('점')}</b></span>
                         <span><b>{d.kw_per_bar != null ? d.kw_per_bar.toFixed(2) : '-'}</b> kW/bar</span>
                         <span>{t('부담')} {d.load_share_pct}%</span>
                         {d.loss_pct > 0 && <span className={mmc.peak_overTagRed}>{t('효율 손실')} +{d.loss_pct}%</span>}
