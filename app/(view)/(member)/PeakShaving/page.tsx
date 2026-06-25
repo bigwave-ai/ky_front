@@ -338,6 +338,12 @@ export default function PeakShavingPage() {
               <h3>{t('장비 효율 랭킹')}</h3>
               <p>{t('압력당 전력(kW/bar)이 낮을수록 효율적입니다. 같은 압력을 더 적은 전력으로 내는 장비.')}</p>
             </div>
+            <dl className={mmc.peak_glossary}>
+              <div><dt>{t('효율(kW/bar)')}</dt><dd>{t('압력 1bar를 내는 데 쓰는 전력. 낮을수록 효율적 — 같은 압력을 더 적은 전력으로 냅니다.')}</dd></div>
+              <div><dt>{t('효율 손실')}</dt><dd>{t('가장 효율 좋은 장비 대비 이 장비가 더 쓰는 전력 비율(=줄일 수 있는 낭비).')}</dd></div>
+              <div><dt>{t('열화')}</dt><dd>{t('이 장비 자기 효율이 조회기간 동안 나빠진 정도(추세). 클수록 점검·정비 신호.')}</dd></div>
+              <div><dt>{t('부담')}</dt><dd>{t('설비 전체 부하 중 이 장비가 맡고 있는 비율.')}</dd></div>
+            </dl>
             <div className={mmc.peak_actionRows}>
               {devices.map((d) => {
                 const barRate = bestEff && d.kw_per_bar ? Math.min(100, Math.round((bestEff / d.kw_per_bar) * 100)) : 0

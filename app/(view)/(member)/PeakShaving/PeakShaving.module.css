@@ -1447,6 +1447,40 @@
 .peak_distRecos b {
   color: #224bc0;
 }
+/* 지표 용어 설명 */
+.peak_glossary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 18px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  background: #f7f9fc;
+  border: 1px solid #e6ebf2;
+  border-radius: 12px;
+}
+.peak_glossary div {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.peak_glossary dt {
+  flex: 0 0 auto;
+  font-weight: 800;
+  font-size: 12.5px;
+  color: #224bc0;
+  white-space: nowrap;
+}
+.peak_glossary dd {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #5a6675;
+}
+@media (max-width: 760px) {
+  .peak_glossary {
+    grid-template-columns: 1fr;
+  }
+}
 .peak_overTagRed {
   color: #d14343;
   font-weight: 800;
