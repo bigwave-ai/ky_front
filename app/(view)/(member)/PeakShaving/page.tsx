@@ -30,6 +30,9 @@ type EffDeviceType = {
   rank: number
   rank_tied: boolean
   load_share_pct: number
+  spec_kwh_m3: number | null
+  kw_per_m3min: number | null
+  flow_per_min: number | null
 }
 type FeasibilityType = {
   n_running: number
@@ -55,6 +58,7 @@ type ForecastType = {
 }
 type EffResult = {
   company_name: string
+  efficiency_basis: 'flow' | 'power_proxy'
   facility_avg_kw: number
   facility_peak_kw: number
   per_unit_kw: number
@@ -121,6 +125,11 @@ export default function PeakShavingPage() {
   const rated = devices.filter((d) => d.kw_per_bar != null)
   const bestEff = rated.length ? Math.min(...rated.map((d) => d.kw_per_bar as number)) : null
   const worst = rated.length ? rated.reduce((a, b) => ((b.kw_per_bar as number) > (a.kw_per_bar as number) ? b : a)) : null
+  // 효율 기준: 유량계 보유 고객(flow)은 진짜 비동력(kWh/m³), 미보유는 kW/bar 상대전력 프록시.
+  const isFlow = result?.efficiency_basis === 'flow'
+  const metricOf = (d: EffDeviceType) => (isFlow ? d.spec_kwh_m3 : d.kw_per_bar)
+  const ratedM = devices.filter((d) => metricOf(d) != null)
+  const bestMetric = ratedM.length ? Math.min(...ratedM.map((d) => metricOf(d) as number)) : null
   const poorCount = devices.filter((d) => d.status === 'poor').length
 
   const STATUS_META: Record<string, { label: string; cls: string }> = {
@@ -276,8 +285,11 @@ export default function PeakShavingPage() {
               <strong className={mmc.peak_kpiValue}>{result.facility_peak_kw}<small>kW</small></strong>
             </article>
             <article className={`${mmc.peak_kpiCard} ${mmc.peak_stageFadeUp}`}>
-              <span className={mmc.peak_kpiLabel}>{t('최우수 효율')}</span>
-              <strong className={mmc.peak_kpiValue}>{bestEff != null ? bestEff.toFixed(2) : '-'}<small>kW/bar</small></strong>
+              <span className={mmc.peak_kpiLabel}>{isFlow ? t('최우수 효율(비동력)') : t('최우수 상대전력')}</span>
+              <strong className={mmc.peak_kpiValue}>
+                {bestMetric != null ? bestMetric.toFixed(isFlow ? 3 : 2) : '-'}
+                <small>{isFlow ? 'kWh/m³' : 'kW/bar'}</small>
+              </strong>
             </article>
             <article className={`${mmc.peak_kpiCard} ${poorCount ? mmc.peak_kpiCardDanger : ''} ${mmc.peak_stageFadeUp}`}>
               <span className={mmc.peak_kpiLabel}>{t('점검 권고 장비')}</span>
@@ -336,17 +348,27 @@ export default function PeakShavingPage() {
           <article className={`${mmc.peak_actionCard} ${mmc.peak_stageFadeUp}`}>
             <div className={mmc.peak_cardHead}>
               <h3>{t('장비 효율 랭킹')}</h3>
-              <p>{t('압력당 전력(kW/bar)이 낮을수록 효율적입니다. 같은 압력을 더 적은 전력으로 내는 장비.')}</p>
+              <p>{isFlow
+                ? t('유량계 기반 비동력(kWh/m³)이 낮을수록 효율적입니다. 공기 1m³를 더 적은 전력으로 만드는 장비.')
+                : t('유량계가 없어 진짜 효율 대신 동일기종 상대 전력(kW/bar)으로 비교합니다.')}</p>
+            </div>
+            <div className={`${mmc.peak_basisBanner} ${isFlow ? mmc.peak_basisFlow : mmc.peak_basisProxy}`}>
+              {isFlow
+                ? (<><b>{t('진짜 효율: 비동력(kWh/m³)')}</b><span>{t('유량계가 있어 공기 1m³당 전력으로 측정한 산업 표준 효율 지표입니다.')}</span></>)
+                : (<><b>{t('상대 전력 비교(kW/bar) — 진짜 효율 아님')}</b><span>{t('유량계가 없어 진짜 효율은 측정 불가. 동일 기종을 같은 압력에서 비교한 상대 전력으로, 열화·이상 장비 탐지용입니다.')}</span></>)}
             </div>
             <dl className={mmc.peak_glossary}>
-              <div><dt>{t('효율(kW/bar)')}</dt><dd>{t('압력 1bar를 내는 데 쓰는 전력. 낮을수록 효율적 — 같은 압력을 더 적은 전력으로 냅니다.')}</dd></div>
-              <div><dt>{t('효율 손실')}</dt><dd>{t('가장 효율 좋은 장비 대비 이 장비가 더 쓰는 전력 비율(=줄일 수 있는 낭비).')}</dd></div>
-              <div><dt>{t('열화')}</dt><dd>{t('이 장비 자기 효율이 조회기간 동안 나빠진 정도(추세). 클수록 점검·정비 신호.')}</dd></div>
+              {isFlow
+                ? (<div><dt>{t('비동력(kWh/m³)')}</dt><dd>{t('공기 1m³를 만드는 데 드는 전력량. 낮을수록 효율적 — 진짜 효율 지표.')}</dd></div>)
+                : (<div><dt>{t('상대전력(kW/bar)')}</dt><dd>{t('같은 압력에서의 상대 전력. 동일기종 비교용 — 진짜 효율이 아니라 열화·이상 신호입니다.')}</dd></div>)}
+              <div><dt>{t('효율 손실')}</dt><dd>{t('가장 효율 좋은 장비 대비 이 장비가 더 쓰는 비율(=줄일 수 있는 낭비).')}</dd></div>
+              <div><dt>{t('열화')}</dt><dd>{t('이 장비 효율이 조회기간 동안 나빠진 정도(추세). 클수록 점검·정비 신호.')}</dd></div>
               <div><dt>{t('부담')}</dt><dd>{t('설비 전체 부하 중 이 장비가 맡고 있는 비율.')}</dd></div>
             </dl>
             <div className={mmc.peak_actionRows}>
               {devices.map((d) => {
-                const barRate = bestEff && d.kw_per_bar ? Math.min(100, Math.round((bestEff / d.kw_per_bar) * 100)) : 0
+                const m = metricOf(d)
+                const barRate = bestMetric && m ? Math.min(100, Math.round((bestMetric / m) * 100)) : 0
                 return (
                   <div key={d.device_id} className={mmc.peak_effRow}>
                     <div className={mmc.peak_effRank}><small>{d.rank_tied ? t('공동') : t('효율')}</small>{d.rank}{t('위')}</div>
@@ -357,10 +379,20 @@ export default function PeakShavingPage() {
                         <span className={mmc.peak_driveChip}>{d.drive_mode}</span>
                       </div>
                       <div className={mmc.peak_actionMeta}>
-                        <span><b>{d.kw_per_bar != null ? d.kw_per_bar.toFixed(2) : '-'}</b> kW/bar</span>
+                        {isFlow
+                          ? (d.spec_kwh_m3 != null
+                              ? <span><b>{d.spec_kwh_m3}</b> kWh/m³</span>
+                              : (d.running && <span className={mmc.peak_overTagRed}>{t('표본부족')}</span>))
+                          : <span><b>{d.kw_per_bar != null ? d.kw_per_bar.toFixed(2) : '-'}</b> kW/bar</span>}
                         <span>{t('부담')} {d.load_share_pct}%</span>
                         {d.loss_pct > 0 && <span className={mmc.peak_overTagRed}>{t('효율 손실')} +{d.loss_pct}%</span>}
-                        {d.running && <span className={d.degrade_pct >= 1 ? mmc.peak_overTagRed : ''}>{t('열화')} {d.degrade_pct}%</span>}
+                        {d.running && (
+                          d.degrade_pct >= 1
+                            ? <span className={mmc.peak_overTagRed}>{t('열화')} {d.degrade_pct}%</span>
+                            : d.degrade_pct < 0
+                              ? <span className={mmc.peak_okTag}>{t('효율 개선')} {Math.abs(d.degrade_pct)}%</span>
+                              : <span>{t('열화')} {d.degrade_pct}%</span>
+                        )}
                       </div>
                       <div className={mmc.peak_effBarTrack}>
                         <div className={mmc.peak_effBarFill} style={{ width: `${barRate}%` }} />
