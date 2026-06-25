@@ -53,12 +53,33 @@ type DistributionType = {
   skew_alert: string | null
   feasibility: FeasibilityType | null
 }
+type ShiftPlanType = {
+  stop_or_reduce: string
+  transfer_to: string
+  transfer_air_m3min: number
+  worst_load_kw: number
+  net_saving_kw: number | null
+  basis: string
+}
+type OverloadGuardType = {
+  action: string
+  expected_power_change_kw: number
+  purpose: string
+}
 type ForecastType = {
   now_kw: number
   pred_15_kw: number | null
   pred_30_kw: number | null
   trend: string | null
   action: string | null
+  estimate_label?: string
+  threshold_kw?: number
+  threshold_source?: 'target' | 'p95' | 'capacity_proximity'
+  peak_predicted?: boolean
+  overshoot_kw?: number
+  shift_plan?: ShiftPlanType | null
+  shift_note?: string | null
+  overload_guard?: OverloadGuardType | null
 }
 type EffResult = {
   company_name: string
@@ -444,6 +465,43 @@ export default function PeakShavingPage() {
                 </div>
               </div>
               {result.forecast.action && <div className={mmc.peak_recoLine}>• {result.forecast.action}</div>}
+
+              {/* 예측-피크 분배 권고: 피크가 예측될 때만 (어느 장비를 어떻게) */}
+              {result.forecast.peak_predicted && (
+                <div className={mmc.peak_peakPanel}>
+                  <div className={mmc.peak_peakHead}>
+                    ⚠ {t('피크 예측')} — {result.forecast.pred_30_kw}kW
+                    {result.forecast.threshold_source === 'target'
+                      ? ` (${t('목표선')} ${result.forecast.threshold_kw}kW ${t('초과')} +${result.forecast.overshoot_kw}kW)`
+                      : ` (${result.forecast.threshold_source === 'p95' ? t('최근 상위(p95)') : t('관측 피크')} ${result.forecast.threshold_kw}kW ${t('근접')})`}
+                    <small> · {result.forecast.estimate_label}</small>
+                  </div>
+
+                  {/* 효율 재분배(피크 낮추는 정직한 레버) */}
+                  {result.forecast.shift_plan && (
+                    <div className={mmc.peak_peakShift}>
+                      <b>{t('효율 재분배')}</b>
+                      <span>
+                        {t('최저효율')} <b>{shortName(result.forecast.shift_plan.stop_or_reduce)}</b>{t('가 만드는 공기 약')} {result.forecast.shift_plan.transfer_air_m3min} m³/min{t('을 효율 1위')} <b>{shortName(result.forecast.shift_plan.transfer_to)}</b>{t('로 이전 →')} {t('같은 생산에 순절감')} <b>약 {result.forecast.shift_plan.net_saving_kw}kW</b> ({result.forecast.shift_plan.basis} {t('반영')}).
+                      </span>
+                      <small>{t('※ 정지 장비 부하 전부가 절감되는 게 아니라, 그 공기를 효율기가 메우므로 효율차만큼만 절감됩니다.')}</small>
+                    </div>
+                  )}
+
+                  {/* 절감 불가/주의 (호한 등) */}
+                  {result.forecast.shift_note && (
+                    <div className={mmc.peak_peakNote}>{result.forecast.shift_note}</div>
+                  )}
+
+                  {/* 과부하 방지 (예비기 가동 — 전력 증가, 절감 아님) */}
+                  {result.forecast.overload_guard && (
+                    <div className={mmc.peak_peakGuard}>
+                      🔺 <b>{result.forecast.overload_guard.action}</b> — {result.forecast.overload_guard.purpose}
+                      <small> ({t('총전력 약')} +{result.forecast.overload_guard.expected_power_change_kw}kW)</small>
+                    </div>
+                  )}
+                </div>
+              )}
             </article>
           )}
         </section>
