@@ -1434,6 +1434,15 @@
 .peak_feasOk b {
   color: #1f9c61;
 }
+.peak_feasStandby {
+  font-size: 13px !important;
+  font-weight: 700;
+  color: #b9772a !important;
+  background: #fff7ec;
+  border-radius: 8px;
+  padding: 7px 10px;
+  margin-top: 2px;
+}
 .peak_distRecos {
   display: flex;
   flex-direction: column;

@@ -39,9 +39,12 @@ type FeasibilityType = {
   n_running: number
   facility_avg_kw: number
   facility_peak_kw: number
+  working_capacity_kw: number
   shed_capacity_kw: number
+  shed_pct: number
   can_shed_one: boolean
   headroom_kw: number
+  start_standby: string | null
   verdict: string
 }
 type DistributionType = {
@@ -308,11 +311,14 @@ export default function PeakShavingPage() {
               </div>
               {result.distribution.feasibility && (
                 <div className={`${mmc.peak_feasBanner} ${result.distribution.feasibility.can_shed_one ? mmc.peak_feasOk : mmc.peak_feasNone}`}>
-                  <b>{result.distribution.feasibility.can_shed_one ? t('대수 분배 가능') : t('대수 분배 여유 없음')}</b>
+                  <b>{result.distribution.feasibility.can_shed_one ? t('저부하 시 감산 분배 가능') : t('감산 분배 여유 없음')}</b>
                   <span>{result.distribution.feasibility.verdict}</span>
+                  {result.distribution.feasibility.start_standby && (
+                    <span className={mmc.peak_feasStandby}>🔺 {result.distribution.feasibility.start_standby}</span>
+                  )}
                   <small>
                     {t('총부하')} {result.distribution.feasibility.facility_avg_kw}kW · {t('피크')} {result.distribution.feasibility.facility_peak_kw}kW ·
-                    {' '}{result.distribution.feasibility.n_running - 1}{t('대 용량')} {result.distribution.feasibility.shed_capacity_kw}kW · {t('여유')} {result.distribution.feasibility.headroom_kw}kW
+                    {' '}{t('가동 장비 용량')} {result.distribution.feasibility.working_capacity_kw}kW · {t('저부하 구간')} {result.distribution.feasibility.shed_pct}%
                   </small>
                 </div>
               )}
@@ -387,7 +393,7 @@ export default function PeakShavingPage() {
                       </div>
                       <div className={mmc.peak_actionMeta}>
                         {isStandby
-                          ? <span>{t('가동률')} {d.runtime_pct}% — {t('예비 가동')}</span>
+                          ? <span>{t('조회기간 가동률')} {d.runtime_pct}% · {t('거의 미가동(예비 추정)')}</span>
                           : isFlow
                             ? (d.spec_kwh_m3 != null
                                 ? <span><b>{d.spec_kwh_m3}</b> kWh/m³</span>
@@ -398,7 +404,7 @@ export default function PeakShavingPage() {
                         {!isStandby && d.running && (
                           d.degrade_pct >= 1
                             ? <span className={mmc.peak_overTagRed}>{t('열화')} {d.degrade_pct}%</span>
-                            : d.degrade_pct < 0
+                            : d.degrade_pct <= -3
                               ? <span className={mmc.peak_okTag}>{t('효율 개선')} {Math.abs(d.degrade_pct)}%</span>
                               : <span>{t('열화')} {d.degrade_pct}%</span>
                         )}
