@@ -28,6 +28,11 @@ export const PYTHON_CONFIG = {
       `${PYTHON_API_PREFIX}/api/optimize/peak-target`,
     ),
 
+    // 효율(압력당 전력) 분석 + 운영 스케줄
+    EFFICIENCY: normalizeEndpointPath(
+      `${PYTHON_API_PREFIX}/api/optimize/efficiency`,
+    ),
+
     // 시뮬레이션 템플릿 조회
     SIMULATION_TEMPLATE: (deviceId: string) =>
       normalizeEndpointPath(`${PYTHON_API_PREFIX}/api/simulate/template/${deviceId}`),
