@@ -2,436 +2,347 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import mmc from './PeakShaving.module.css'
-import imag from '@/app/components/style/resources/css/image.module.css'
 import CommonDonutEquipment, {
   type CommonDonutEquipmentItem,
 } from '@/app/components/libs/charts/common/common-donut-equipment'
+import CommonDetailMonitoringTimeSeriesChart, {
+  type DetailMonitoringPointType,
+} from '@/app/components/libs/charts/common/common-detail-monitoring-timeseries'
+import CommonHorizontalBar from '@/app/components/libs/charts/common/common-horizontal-bar'
 import LoadingModal from '@/app/components/libs/modals/modal-loading'
 import WarningModal from '@/app/components/libs/modals/modal-warnning'
-import CommonPeakPredictBars from '@/app/components/libs/charts/common/common-peak-predict-bars'
 import { withAppPrefix } from '@/config/environment'
 import { useTranslation } from '@/app/services/i18n/LanguageProvider'
 import { getSessionUserInfo } from '@/app/services/util/session-info'
 
 /*
- * 01. 구분     : Page 컴포넌트
- * 02. 타입     : Client Component
- * 03. 업무구분  : 멤버, 관리자 권한 - MILP 피크 분배 대시보드
- * 03. 설명     : MILP 피크 분배 시뮬레이션 입력/실행/결과 UI
- *                - Python API 연동
- *                - 장비명 DB 조회 연동
- *                - 관리자 고객사 검색/선택 지원
- * 04. 작성일자  : 2026.04.08
- * 05. 작성자   : 이우창
+ * 01. 구분     : Page 컴포넌트 (Client)
+ * 02. 업무구분  : 멤버/관리자 - 피크 관리 어드바이저리 콘솔
+ * 03. 설명     : 목표 피크선 설정 → 진단 실행 → 조치 대시보드(KPI/시계열/조치 리스트)
+ * 04. 작성일자  : 2026.06.25 (재설계)
  */
 
-type PeakDispatchDeviceType = {
+/******************** 타입 ********************/
+type PeakDeviceType = {
   device_id: string
+  is_donor: boolean
+  threshold: number
   baseline_15: number
   baseline_30: number
-  threshold: number
+  shift_out_15: number
+  shift_out_30: number
   distribution_text: string
+  drive_mode: string
+  horse_power: number | null
+  is_idle: boolean
+  required_shift_15: number
+  required_shift_30: number
+  optimized_15: number
+  optimized_30: number
+  status: 'normal' | 'warning' | 'exceed' | 'unknown'
+  action_type: 'distribute' | 'vsd_reduce' | 'on_off_swap' | 'review' | 'none'
 }
 
-type PeakDispatchResponseType = {
+type PeakResultType = {
   success?: boolean
-  status?: string
   message?: string
   device_count: number
-  donor_device_ids: string[]
-  idle_device_ids: string[]
   skipped_devices: unknown[]
-  peak_15_reduction: number
-  peak_15_reduction_pct: number
-  peak_30_reduction: number
-  peak_30_reduction_pct: number
-  devices: PeakDispatchDeviceType[]
+  devices: PeakDeviceType[]
 }
 
-type DeviceNameResponseType = {
-  success: boolean
-  data: Record<string, string>
-  message?: string
+type AdminCustomerOptionType = { id: string; name: string }
+type DeviceTargetType = { device_id: string; target_kw: number }
+
+/******************** 정규화 ********************/
+const toNumber = (v: unknown, fb = 0) => {
+  const n = Number(v)
+  return Number.isFinite(n) ? n : fb
 }
+const toStr = (v: unknown) => String(v ?? '').trim()
 
-type PeakRecommendationType = {
-  deviceId: string
-  equipmentName: string
-  distributionLines: string[]
-  base15Kw: number
-  base30Kw: number
-}
-
-type AdminCustomerOptionType = {
-  id: string
-  name: string
-}
-
-type GetCustomersResponseType = {
-  success: boolean
-  data: AdminCustomerOptionType[]
-  message?: string
-}
-
-type SessionUserInfoType = {
-  customerId: string
-  role: string
-  isAdmin: boolean
-}
-
-/******************** 변수 영역 ********************/
-
-/******************** 함수 영역 ********************/
-// 값이 숫자가 아니면 fallback을 반환하는 숫자 정규화 함수
-const toNumber = (value: unknown, fallback = 0) => {
-  const num = Number(value) // 숫자 변환 결과
-  return Number.isFinite(num) ? num : fallback
-}
-
-// 배열 값을 문자열 배열로 정규화하는 함수
-const toStringArray = (value: unknown) => {
-  if (!Array.isArray(value)) return []
-  return value.map((v) => String(v ?? '').trim()).filter(Boolean)
-}
-
-// MILP API 응답을 화면에서 사용하는 표준 구조로 정규화하는 함수
-const normalizePeakDispatchResponse = (raw: any): PeakDispatchResponseType => {
-  const devices = Array.isArray(raw?.devices) ? raw.devices : [] // 장비 배열 원본
-
+const normalizeResult = (raw: any): PeakResultType => {
+  const devices = Array.isArray(raw?.devices) ? raw.devices : []
   return {
     success: typeof raw?.success === 'boolean' ? raw.success : undefined,
-    status: typeof raw?.status === 'string' ? raw.status : undefined,
     message: typeof raw?.message === 'string' ? raw.message : undefined,
-
     device_count: Math.max(0, Math.floor(toNumber(raw?.device_count, 0))),
-    donor_device_ids: toStringArray(raw?.donor_device_ids),
-    idle_device_ids: toStringArray(raw?.idle_device_ids),
     skipped_devices: Array.isArray(raw?.skipped_devices) ? raw.skipped_devices : [],
-
-    peak_15_reduction: toNumber(raw?.peak_15_reduction, 0),
-    peak_15_reduction_pct: toNumber(raw?.peak_15_reduction_pct, 0),
-    peak_30_reduction: toNumber(raw?.peak_30_reduction, 0),
-    peak_30_reduction_pct: toNumber(raw?.peak_30_reduction_pct, 0),
-
-    devices: devices.map((item: any) => ({
-      device_id: String(item?.device_id ?? '').trim(),
-      baseline_15: toNumber(item?.baseline_15, 0),
-      baseline_30: toNumber(item?.baseline_30, 0),
-      threshold: toNumber(item?.threshold, 0),
-      distribution_text: String(item?.distribution_text ?? '').trim(),
+    devices: devices.map((d: any) => ({
+      device_id: toStr(d?.device_id),
+      is_donor: Boolean(d?.is_donor),
+      threshold: toNumber(d?.threshold, 0),
+      baseline_15: toNumber(d?.baseline_15, 0),
+      baseline_30: toNumber(d?.baseline_30, 0),
+      shift_out_15: toNumber(d?.shift_out_15, 0),
+      shift_out_30: toNumber(d?.shift_out_30, 0),
+      distribution_text: toStr(d?.distribution_text),
+      drive_mode: toStr(d?.drive_mode) || 'UNKNOWN',
+      horse_power: d?.horse_power == null ? null : toNumber(d?.horse_power, 0),
+      is_idle: Boolean(d?.is_idle),
+      required_shift_15: toNumber(d?.required_shift_15, 0),
+      required_shift_30: toNumber(d?.required_shift_30, 0),
+      optimized_15: toNumber(d?.optimized_15, 0),
+      optimized_30: toNumber(d?.optimized_30, 0),
+      status: (['normal', 'warning', 'exceed', 'unknown'].includes(d?.status) ? d.status : 'normal') as PeakDeviceType['status'],
+      action_type: (['distribute', 'vsd_reduce', 'on_off_swap', 'review', 'none'].includes(d?.action_type)
+        ? d.action_type
+        : 'none') as PeakDeviceType['action_type'],
     })),
   }
 }
 
-// 세션 파싱은 공유 유틸로 통합: @/app/services/util/session-info (getSessionUserInfo)
-
-// 관리자 고객사 목록 조회 함수
 const fetchAdminCustomers = async (): Promise<AdminCustomerOptionType[]> => {
-  const response = await fetch(withAppPrefix('/api/admin/getCustomers'), { method: 'GET' })
-  const json = (await response.json().catch(() => null)) as GetCustomersResponseType | null
-
-  if (!response.ok || !json?.success) {
-    throw new Error(json?.message ?? '고객사 목록 조회에 실패했습니다.')
-  }
-
+  const res = await fetch(withAppPrefix('/api/admin/getCustomers'), { method: 'GET' })
+  const json = (await res.json().catch(() => null)) as any
+  if (!res.ok || !json?.success) throw new Error(json?.message ?? '고객사 목록 조회에 실패했습니다.')
   return (Array.isArray(json.data) ? json.data : [])
-    .map((item) => ({
-      id: String(item.id ?? '').trim(),
-      name: String(item.name ?? '-').trim() || '-',
-    }))
-    .filter((item) => Boolean(item.id))
-    .sort((a, b) => a.name.localeCompare(b.name, 'ko'))
+    .map((it: any) => ({ id: toStr(it.id), name: toStr(it.name) || '-' }))
+    .filter((it: AdminCustomerOptionType) => Boolean(it.id))
+    .sort((a: AdminCustomerOptionType, b: AdminCustomerOptionType) => a.name.localeCompare(b.name, 'ko'))
 }
 
 export default function PeakShavingPage() {
-  /******************** 변수 영역 ********************/
   const { t } = useTranslation()
-  const [idleThreshold, setIdleThreshold] = useState(0.05) // 미가동 기준값(0~1, 소수 2자리)
-  const [queryHour, setQueryHour] = useState(24) // 조회 시간(시간 단위)
-  const [showEquipmentResult, setShowEquipmentResult] = useState(false) // 결과 카드 표시 여부
-  const [isRunning, setIsRunning] = useState(false) // MILP 실행 중 여부
 
-  const [milpResult, setMilpResult] = useState<PeakDispatchResponseType | null>(null) // MILP 결과 원본
-  const [deviceNameMap, setDeviceNameMap] = useState<Record<string, string>>({}) // device_id -> 장비명 매핑
+  // 세션/고객사
+  const [sessionCustomerId, setSessionCustomerId] = useState('')
+  const [sessionRole, setSessionRole] = useState('')
+  const [customerOptions, setCustomerOptions] = useState<AdminCustomerOptionType[]>([])
+  const [selectedCustomerId, setSelectedCustomerId] = useState('')
+  const [customerKeyword, setCustomerKeyword] = useState('')
+  const [isCustomerSearching, setIsCustomerSearching] = useState(false)
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false)
+  const customerComboRef = useRef<HTMLDivElement | null>(null)
 
-  const [warnOpen, setWarnOpen] = useState(false) // 경고 모달 오픈 여부
-  const [warnTitle, setWarnTitle] = useState('') // 경고 모달 제목
-  const [warnDetail, setWarnDetail] = useState('') // 경고 모달 상세 메시지
+  // 목표선
+  const [companyTargetInput, setCompanyTargetInput] = useState('')
+  const [savedCompanyTarget, setSavedCompanyTarget] = useState<number | null>(null)
+  const [deviceTargets, setDeviceTargets] = useState<Record<string, number>>({})
+  const [deviceTargetInputs, setDeviceTargetInputs] = useState<Record<string, string>>({})
+  const [isSavingTarget, setIsSavingTarget] = useState(false)
 
-  const [sessionCustomerId, setSessionCustomerId] = useState('') // 세션 customer_id
-  const [sessionRole, setSessionRole] = useState('') // 세션 role
+  // 진단
+  const [isRunning, setIsRunning] = useState(false)
+  const [result, setResult] = useState<PeakResultType | null>(null)
+  const [deviceNameMap, setDeviceNameMap] = useState<Record<string, string>>({})
+  const [selectedDeviceId, setSelectedDeviceId] = useState('')
+  const [historyMap, setHistoryMap] = useState<Record<string, DetailMonitoringPointType[]>>({})
 
-  const [customerOptions, setCustomerOptions] = useState<AdminCustomerOptionType[]>([]) // 관리자 고객사 목록
-  const [selectedCustomerId, setSelectedCustomerId] = useState('') // 관리자 선택 고객사 ID
-  const [customerKeyword, setCustomerKeyword] = useState('') // 고객사 검색어
-  const [isCustomerSearching, setIsCustomerSearching] = useState(false) // 사용자가 직접 검색어를 입력 중인지 여부
-  const [isCustomerListLoading, setIsCustomerListLoading] = useState(false) // 고객사 목록 로딩 여부
-  const [customerListError, setCustomerListError] = useState<string | null>(null) // 고객사 목록 오류 메시지
-  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false) // 고객사 드롭다운 오픈 여부
-
-  const customerComboRef = useRef<HTMLDivElement | null>(null) // 고객사 콤보 박스 ref
-
-  const isAdminUser = useMemo(() => {
-    const role = sessionRole.trim().toLowerCase()
-    return role === 'admin' || role.includes('admin') || role.includes('관리')
-  }, [sessionRole]) // 관리자 여부 판별
-
-  const resolvedCustomerId = isAdminUser ? selectedCustomerId : sessionCustomerId // API 요청에 사용할 customer_id
-
-  const shouldHidePeakContent =
-    isAdminUser && !String(selectedCustomerId ?? '').trim() // 관리자 + 고객사 미선택 시 본문 숨김
-
-  const filteredCustomerOptions = useMemo(() => {
-    const keyword = customerKeyword.trim().toLowerCase()
-    // 사용자가 직접 검색어를 입력 중일 때만 필터링한다.
-    // 고객사를 선택해 input에 이름이 채워진 상태에서는 전체 목록을 보여준다.
-    const filtered = keyword && isCustomerSearching
-      ? customerOptions.filter((item) => item.name.toLowerCase().includes(keyword))
-      : customerOptions
-
-    if (!selectedCustomerId) return filtered
-    if (filtered.some((item) => item.id === selectedCustomerId)) return filtered
-
-    const selected = customerOptions.find((item) => item.id === selectedCustomerId)
-    return selected ? [selected, ...filtered] : filtered
-  }, [customerKeyword, customerOptions, selectedCustomerId, isCustomerSearching]) // 검색 적용 고객사 목록
-
-  const analysisEquipmentCount = milpResult?.device_count ?? 0 // 분석 장비 수
-  const idleEquipmentCount = milpResult?.idle_device_ids.length ?? 0 // 미가동 장비 수
-  const skippedEquipmentCount = milpResult?.skipped_devices.length ?? 0 // 제외 장비 수
-  const totalEquipmentCount = analysisEquipmentCount + idleEquipmentCount + skippedEquipmentCount // 전체 장비 수
-
-  const equipmentLegend: CommonDonutEquipmentItem[] = useMemo(
-    () => [
-      { label: t('분석 장비 수'), value: analysisEquipmentCount, color: '#0d274b', unit: t('대') },
-      { label: t('미가동 장비 수'), value: idleEquipmentCount, color: '#29a9dd', unit: t('대') },
-      { label: t('제외 장비 수'), value: skippedEquipmentCount, color: '#e9a24f', unit: t('대') },
-    ],
-    [analysisEquipmentCount, idleEquipmentCount, skippedEquipmentCount, t],
-  ) // 도넛 차트 범례 데이터
-
-  const peakCut15Kw = milpResult?.peak_15_reduction ?? 0 // 15분 피크 절감량(kW)
-  const peakCut15Rate = milpResult?.peak_15_reduction_pct ?? 0 // 15분 피크 절감률(%)
-  const peakCut30Kw = milpResult?.peak_30_reduction ?? 0 // 30분 피크 절감량(kW)
-  const peakCut30Rate = milpResult?.peak_30_reduction_pct ?? 0 // 30분 피크 절감률(%)
-
-  const recommendations: PeakRecommendationType[] = useMemo(() => {
-    if (!milpResult) return []
-
-    return milpResult.devices.map((item, index) => {
-      const fallbackName = `Compressor${index + 1}` // 장비명 매핑 실패 시 기본 이름
-      const equipmentName = deviceNameMap[item.device_id] || fallbackName // 최종 장비명
-
-      const lines = String(item.distribution_text || '')
-        .split('\n')
-        .map((line) => line.trim())
-        .filter(Boolean) // 추천 문구 줄 단위 분리
-
-      return {
-        deviceId: item.device_id,
-        equipmentName,
-        distributionLines: lines.length ? lines : [t('추천 분배 문구가 없습니다.')],
-        base15Kw: item.baseline_15,
-        base30Kw: item.baseline_30,
-      }
-    })
-  }, [milpResult, deviceNameMap, t]) // 장비별 추천 데이터
-
-  const maxPredictValue = useMemo(() => {
-    if (!recommendations.length) return 1
-    const maxValue = Math.max(
-      ...recommendations.flatMap((item) => [item.base15Kw, item.base30Kw]),
-    ) // 막대차트 최대 기준값 계산
-    return Math.max(1, Math.ceil(maxValue * 1.2))
-  }, [recommendations]) // 예측 막대차트 최대값
-
-  /******************** 함수 영역 ********************/
-  // 경고 모달을 열고 메시지를 설정하는 함수
+  // 경고 모달
+  const [warnOpen, setWarnOpen] = useState(false)
+  const [warnTitle, setWarnTitle] = useState('')
+  const [warnDetail, setWarnDetail] = useState('')
   const openWarn = (title: string, detail: string) => {
     setWarnTitle(title)
     setWarnDetail(detail)
     setWarnOpen(true)
   }
 
-  // 경고 모달을 닫는 함수
-  const closeWarn = () => setWarnOpen(false)
+  const isAdminUser = useMemo(() => {
+    const r = sessionRole.trim().toLowerCase()
+    return r === 'admin' || r.includes('admin') || r.includes('관리')
+  }, [sessionRole])
+  const resolvedCustomerId = isAdminUser ? selectedCustomerId : sessionCustomerId
+  const shouldHide = isAdminUser && !toStr(selectedCustomerId)
 
-  // 미가동 기준값을 0~1, 소수점 2자리로 보정하는 함수
-  const normalizeIdleThreshold = (value: number) => {
-    const clamped = Math.min(1, Math.max(0, value)) // 범위 제한
-    return Math.round(clamped * 100) / 100
+  const filteredCustomerOptions = useMemo(() => {
+    const kw = customerKeyword.trim().toLowerCase()
+    const filtered = kw && isCustomerSearching ? customerOptions.filter((it) => it.name.toLowerCase().includes(kw)) : customerOptions
+    if (!selectedCustomerId) return filtered
+    if (filtered.some((it) => it.id === selectedCustomerId)) return filtered
+    const sel = customerOptions.find((it) => it.id === selectedCustomerId)
+    return sel ? [sel, ...filtered] : filtered
+  }, [customerKeyword, customerOptions, selectedCustomerId, isCustomerSearching])
+
+  /******************** 파생 ********************/
+  const devices = result?.devices ?? []
+  const sortedDevices = useMemo(() => {
+    const rank: Record<string, number> = { exceed: 0, warning: 1, normal: 2, unknown: 3 }
+    const over = (d: PeakDeviceType) => Math.max(d.required_shift_15, d.required_shift_30)
+    return [...devices].sort((a, b) => (rank[a.status] - rank[b.status]) || (over(b) - over(a)))
+  }, [devices])
+
+  const exceedCount = devices.filter((d) => d.status === 'exceed').length
+  const warningCount = devices.filter((d) => d.status === 'warning').length
+  const normalCount = devices.filter((d) => d.status === 'normal' || d.status === 'unknown').length
+  const totalOver = devices.reduce((s, d) => s + Math.max(0, d.required_shift_15, d.required_shift_30), 0)
+  const complianceRate = devices.length ? Math.round(((devices.length - exceedCount) / devices.length) * 100) : 100
+
+  const donutLegend: CommonDonutEquipmentItem[] = useMemo(
+    () => [
+      { label: t('정상'), value: normalCount, color: '#2bb673', unit: t('대') },
+      { label: t('주의'), value: warningCount, color: '#e9a24f', unit: t('대') },
+      { label: t('목표 초과'), value: exceedCount, color: '#d14343', unit: t('대') },
+    ],
+    [normalCount, warningCount, exceedCount, t],
+  )
+
+  const selectedDevice = useMemo(() => devices.find((d) => d.device_id === selectedDeviceId) ?? null, [devices, selectedDeviceId])
+  const heroForecast = useMemo<DetailMonitoringPointType[]>(() => {
+    if (!selectedDevice) return []
+    const hist = historyMap[selectedDevice.device_id] ?? []
+    const lastTime = hist.length ? hist[hist.length - 1].time : t('현재')
+    return [
+      { time: lastTime, value: hist.length ? hist[hist.length - 1].value : selectedDevice.baseline_15 },
+      { time: t('15분 후'), value: selectedDevice.baseline_15 },
+      { time: t('30분 후'), value: selectedDevice.baseline_30 },
+    ]
+  }, [selectedDevice, historyMap, t])
+
+  const deviceName = (id: string, idx?: number) => deviceNameMap[id] || `Compressor${(idx ?? 0) + 1}`
+
+  /******************** 표시 헬퍼 ********************/
+  const STATUS_META: Record<string, { label: string; cls: string }> = {
+    exceed: { label: t('목표 초과'), cls: mmc.peak_badgeExceed },
+    warning: { label: t('주의'), cls: mmc.peak_badgeWarning },
+    normal: { label: t('정상'), cls: mmc.peak_badgeNormal },
+    unknown: { label: t('목표선 미설정'), cls: mmc.peak_badgeUnknown },
+  }
+  const ACTION_META: Record<string, string> = {
+    distribute: t('부하 분배'),
+    vsd_reduce: t('VSD 감산'),
+    on_off_swap: t('교대/정지'),
+    review: t('구동타입 확인'),
+    none: t('조치 없음'),
+  }
+  const fmtKw = (v: number) => `${toNumber(v).toFixed(1)} kW`
+
+  /******************** 데이터 로드 ********************/
+  const loadTargets = async (customerId: string) => {
+    try {
+      const res = await fetch(withAppPrefix(`/api/optimize/peak-target?customer_id=${encodeURIComponent(customerId)}`))
+      const json = (await res.json().catch(() => null)) as any
+      if (!res.ok || !json) return
+      const company = json?.company_target_kw
+      setSavedCompanyTarget(typeof company === 'number' ? company : null)
+      setCompanyTargetInput(typeof company === 'number' ? String(company) : '')
+      const map: Record<string, number> = {}
+      const inputs: Record<string, string> = {}
+      ;(Array.isArray(json?.devices) ? json.devices : []).forEach((d: DeviceTargetType) => {
+        map[d.device_id] = toNumber(d.target_kw)
+        inputs[d.device_id] = String(toNumber(d.target_kw))
+      })
+      setDeviceTargets(map)
+      setDeviceTargetInputs(inputs)
+    } catch {
+      /* 무시 — 빈 상태로 둠 */
+    }
   }
 
-  // device_id 목록으로 장비명 매핑을 조회하는 함수
-  const fetchDeviceNames = async (deviceIds: string[]) => {
-    if (!deviceIds.length) return {}
-
+  const fetchDeviceNames = async (ids: string[]) => {
+    if (!ids.length) return {}
     try {
-      const response = await fetch(withAppPrefix('/api/member/device-names'), {
+      const res = await fetch(withAppPrefix('/api/member/device-names'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ device_ids: deviceIds }),
+        body: JSON.stringify({ device_ids: ids }),
       })
-
-      const json = (await response.json()) as DeviceNameResponseType // 응답 JSON
-      if (!response.ok || !json?.success) return {}
-
+      const json = (await res.json()) as any
+      if (!res.ok || !json?.success) return {}
       return json.data ?? {}
     } catch {
       return {}
     }
   }
 
-  // 고객사 검색 input 변경 핸들러
-  const handleCustomerKeywordChange = (value: string) => {
-    setCustomerKeyword(value)
-    setIsCustomerDropdownOpen(true)
-    setIsCustomerSearching(true) // 사용자가 직접 입력 → 검색 모드
-
-    const trimmed = value.trim()
-    const exact = customerOptions.find((item) => item.name === trimmed)
-
-    if (exact) {
-      if (selectedCustomerId !== exact.id) {
-        setSelectedCustomerId(exact.id)
-      }
-    } else if (selectedCustomerId) {
-      setSelectedCustomerId('')
+  const fetchHistory = async (deviceId: string) => {
+    if (!deviceId || historyMap[deviceId]) return
+    try {
+      const res = await fetch(withAppPrefix(`/api/monitor/dashboard/${encodeURIComponent(deviceId)}?lookback_hours=24`))
+      const json = (await res.json().catch(() => null)) as any
+      const hist = json?.history_by_time ?? {}
+      const points: DetailMonitoringPointType[] = Object.entries(hist)
+        .sort((a, b) => String(a[0]).localeCompare(String(b[0])))
+        .map(([time, row]: [string, any]) => ({
+          time: String(time).slice(11, 16) || String(time),
+          value: toNumber(row?.CURVOLTAGE, 0),
+        }))
+      setHistoryMap((prev) => ({ ...prev, [deviceId]: points }))
+    } catch {
+      setHistoryMap((prev) => ({ ...prev, [deviceId]: [] }))
     }
   }
 
-  // 고객사 항목 선택 핸들러
-  const handleCustomerSelect = (item: AdminCustomerOptionType) => {
-    setCustomerKeyword(item.name)
-    setIsCustomerSearching(false) // 선택 완료 → 검색 모드 해제(다음 열람 시 전체 목록)
-    if (selectedCustomerId !== item.id) {
-      setSelectedCustomerId(item.id)
+  /******************** 액션 ********************/
+  const saveTarget = async (deviceId: string | null, kwStr: string) => {
+    const customerId = toStr(resolvedCustomerId)
+    if (!customerId) return
+    const kw = Number(kwStr)
+    if (!Number.isFinite(kw) || kw <= 0) {
+      openWarn(t('입력 확인'), t('목표선은 0보다 큰 숫자여야 합니다.'))
+      return
     }
-    setIsCustomerDropdownOpen(false)
+    setIsSavingTarget(true)
+    try {
+      const res = await fetch(withAppPrefix('/api/optimize/peak-target'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customer_id: customerId, device_id: deviceId, target_kw: kw }),
+      })
+      const json = (await res.json().catch(() => null)) as any
+      if (!res.ok) throw new Error(json?.message ?? json?.detail ?? t('목표선 저장 실패'))
+      await loadTargets(customerId)
+      if (result) await runDiagnosis() // 저장 즉시 재진단
+    } catch (e: any) {
+      openWarn(t('목표선 저장 실패'), e?.message ?? t('알 수 없는 오류가 발생했습니다.'))
+    } finally {
+      setIsSavingTarget(false)
+    }
   }
 
-  // MILP 실행 버튼 클릭 시 Python API 호출 및 결과를 반영하는 함수
-  const handleRunMilp = async () => {
+  const runDiagnosis = async () => {
     if (isRunning) return
-
-    const customerId = String(resolvedCustomerId ?? '').trim() // 관리자/일반 사용자 공통 customer_id
+    const customerId = toStr(resolvedCustomerId)
     if (!customerId) {
       openWarn(t('고객사 선택 필요'), t('고객사를 먼저 선택한 뒤 실행해주세요.'))
       return
     }
-
-    const normalizedHour = Math.max(1, Math.floor(queryHour)) // 조회시간 정수/최소 1 보정
-    const normalizedIdle = normalizeIdleThreshold(idleThreshold) // 미가동 기준값 보정
-
     setIsRunning(true)
-    setShowEquipmentResult(false)
-    setMilpResult(null)
-    setDeviceNameMap({})
-
     try {
-      const payload = {
-        lookback_hours: normalizedHour,
-        customer_id: customerId,
-        idle_op_status_threshold: normalizedIdle,
-      } // Python API 요청 바디
-
-      const response = await fetch(withAppPrefix('/api/optimize/peak-dispatch'), {
+      const res = await fetch(withAppPrefix('/api/optimize/peak-dispatch'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ lookback_hours: 24, customer_id: customerId }),
       })
-
-      const responseJson = await response.json().catch(() => null) // 응답 파싱(실패 허용)
-
-      if (!response.ok) {
-        if (response.status === 400) {
-          throw new Error(t('연결된 장비를 찾을 수 없습니다.'))
-        }
-
-        throw new Error(
-          responseJson?.message ??
-            responseJson?.details?.message ??
-            `${t('MILP 실행 요청에 실패했습니다.')} (HTTP ${response.status})`,
-        )
+      const json = await res.json().catch(() => null)
+      if (!res.ok) {
+        if (res.status === 400) throw new Error(t('연결된 장비를 찾을 수 없습니다.'))
+        throw new Error(json?.message ?? json?.details?.message ?? `${t('진단 실행에 실패했습니다.')} (HTTP ${res.status})`)
       }
-
-      if (!responseJson) {
-        throw new Error(t('MILP 응답을 해석할 수 없습니다.'))
-      }
-
-      const normalized = normalizePeakDispatchResponse(responseJson) // 응답 정규화
-
-      if (normalized.success === false) {
-        throw new Error(normalized.message ?? t('MILP 실행 실패'))
-      }
-
-      const deviceIds = normalized.devices
-        .map((device) => device.device_id)
-        .filter(Boolean) // 결과 장비 ID 목록
-
-      const nameMap = await fetchDeviceNames(deviceIds) // 장비명 조회
-
-      setMilpResult(normalized)
-      setDeviceNameMap(nameMap)
-      setShowEquipmentResult(true)
-    } catch (error: any) {
-      setShowEquipmentResult(false)
-      openWarn(t('MILP 실행 실패'), error?.message ?? t('알 수 없는 오류가 발생했습니다.'))
+      const normalized = normalizeResult(json)
+      if (normalized.success === false) throw new Error(normalized.message ?? t('진단 실행 실패'))
+      const ids = normalized.devices.map((d) => d.device_id).filter(Boolean)
+      const names = await fetchDeviceNames(ids)
+      setResult(normalized)
+      setDeviceNameMap(names)
+      const firstExceed = normalized.devices.find((d) => d.status === 'exceed') ?? normalized.devices[0]
+      const sel = firstExceed?.device_id ?? ''
+      setSelectedDeviceId(sel)
+      setHistoryMap({})
+      if (sel) void fetchHistory(sel)
+    } catch (e: any) {
+      openWarn(t('진단 실행 실패'), e?.message ?? t('알 수 없는 오류가 발생했습니다.'))
     } finally {
       setIsRunning(false)
     }
   }
 
-  // kW 단위 표시 문자열 함수
-  const formatKw = (value: number) => `${toNumber(value, 0).toFixed(2)} kW`
-
-  // 퍼센트 표시 문자열 함수
-  const formatRate = (value: number) => `(${toNumber(value, 0).toFixed(2)}%)`
-
-  /******************** 수행 영역 ********************/
+  /******************** 이펙트 ********************/
   useEffect(() => {
+    const s = getSessionUserInfo()
+    setSessionRole(s.role)
+    setSessionCustomerId(s.customerId)
+    if (!s.isAdmin) return
     let disposed = false
-
-    const session = getSessionUserInfo()
-    setSessionRole(session.role)
-    setSessionCustomerId(session.customerId)
-
-    if (!session.isAdmin) {
-      setCustomerOptions([])
-      setSelectedCustomerId('')
-      setCustomerKeyword('')
-      setCustomerListError(null)
-      return
-    }
-
-    const loadCustomers = async () => {
-      setIsCustomerListLoading(true)
-      setCustomerListError(null)
-
+    void (async () => {
       try {
-        const options = await fetchAdminCustomers()
-        if (!disposed) {
-          setCustomerOptions(options)
-          setSelectedCustomerId((prev) => {
-            if (prev && options.some((v) => v.id === prev)) return prev
-            return ''
-          })
-        }
-      } catch (error: any) {
-        if (!disposed) {
-          setCustomerOptions([])
-          setSelectedCustomerId('')
-          setCustomerListError(error?.message ?? t('고객사 목록 조회 중 오류가 발생했습니다.'))
-        }
-      } finally {
-        if (!disposed) {
-          setIsCustomerListLoading(false)
-        }
+        const opts = await fetchAdminCustomers()
+        if (!disposed) setCustomerOptions(opts)
+      } catch {
+        if (!disposed) setCustomerOptions([])
       }
-    }
-
-    void loadCustomers()
-
+    })()
     return () => {
       disposed = true
     }
@@ -439,305 +350,313 @@ export default function PeakShavingPage() {
 
   useEffect(() => {
     if (!isAdminUser) return
-    const selected = customerOptions.find((item) => item.id === selectedCustomerId)
-    if (selected) {
-      setCustomerKeyword(selected.name)
-    }
+    const sel = customerOptions.find((it) => it.id === selectedCustomerId)
+    if (sel) setCustomerKeyword(sel.name)
   }, [isAdminUser, customerOptions, selectedCustomerId])
 
   useEffect(() => {
     if (!isAdminUser) return
-
-    const handleOutsideClick = (event: MouseEvent) => {
-      if (!customerComboRef.current) return
-      if (!customerComboRef.current.contains(event.target as Node)) {
-        setIsCustomerDropdownOpen(false)
-      }
+    const onClick = (e: MouseEvent) => {
+      if (customerComboRef.current && !customerComboRef.current.contains(e.target as Node)) setIsCustomerDropdownOpen(false)
     }
-
-    document.addEventListener('mousedown', handleOutsideClick)
-    return () => document.removeEventListener('mousedown', handleOutsideClick)
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
   }, [isAdminUser])
 
+  // 고객사 변경 시 초기화 + 목표선 로드
   useEffect(() => {
-    // 고객 변경 시 이전 결과 초기화
-    setShowEquipmentResult(false)
-    setMilpResult(null)
+    setResult(null)
     setDeviceNameMap({})
+    setSelectedDeviceId('')
+    setHistoryMap({})
+    setSavedCompanyTarget(null)
+    setCompanyTargetInput('')
+    setDeviceTargets({})
+    setDeviceTargetInputs({})
+    const cid = toStr(resolvedCustomerId)
+    if (cid) void loadTargets(cid)
   }, [resolvedCustomerId])
 
+  // 선택 장비 변경 시 히스토리 로드
+  useEffect(() => {
+    if (selectedDeviceId) void fetchHistory(selectedDeviceId)
+  }, [selectedDeviceId])
+
+  const handleCustomerSelect = (it: AdminCustomerOptionType) => {
+    setCustomerKeyword(it.name)
+    setIsCustomerSearching(false)
+    if (selectedCustomerId !== it.id) setSelectedCustomerId(it.id)
+    setIsCustomerDropdownOpen(false)
+  }
+
+  /******************** 렌더 ********************/
   return (
     <div className={mmc.peak_root}>
       <header className={`${mmc.peak_pageHead} ${mmc.peak_stageFadeUp}`}>
         <div className={mmc.peak_pageHeadTop}>
           <div className={mmc.peak_pageHeadText}>
-            <h1>{t('MILP 피크 분배 시뮬레이션')}</h1>
-            <p>{t('MILP 피크 전력 분배 시뮬레이션 결과를 확인할 수 있습니다.')}</p>
+            <h1>{t('피크 관리 콘솔')}</h1>
+            <p>{t('목표 피크선을 설정하면, AI 예측이 그 선을 넘는 장비에 대해 조치를 안내합니다.')}</p>
           </div>
 
           {isAdminUser && (
             <div className={mmc.peak_customerSelectBox}>
               <strong className={mmc.peak_customerSelectTitle}>{t('고객사 선택')}</strong>
-
-              <div className={mmc.peak_customerSelectControls}>
-                <div className={mmc.peak_customerCombo} ref={customerComboRef}>
-                  <input
-                    type="text"
-                    className={mmc.peak_customerSearchInput}
-                    placeholder={t('고객사 검색 후 선택')}
-                    value={customerKeyword}
-                    onFocus={(e) => {
-                      setIsCustomerDropdownOpen(true)
-                      setIsCustomerSearching(false) // 열람 시작 → 전체 목록 표시
-                      e.currentTarget.select() // 이름 전체 선택: 바로 타이핑하면 새 검색
-                    }}
-                    onChange={(e) => handleCustomerKeywordChange(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Escape') {
-                        setIsCustomerDropdownOpen(false)
-                      }
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        const first = filteredCustomerOptions[0]
-                        if (first) handleCustomerSelect(first)
-                      }
-                    }}
-                    disabled={isCustomerListLoading}
-                  />
-
-                  <button
-                    type="button"
-                    className={mmc.peak_customerComboArrow}
-                    onClick={() => setIsCustomerDropdownOpen((prev) => !prev)}
-                    disabled={isCustomerListLoading}
-                    aria-label={t('고객사 목록 열기')}
-                  >
-                    ▾
-                  </button>
-
-                  {isCustomerDropdownOpen && (
-                    <div className={mmc.peak_customerDropdown}>
-                      {filteredCustomerOptions.length ? (
-                        filteredCustomerOptions.map((item) => (
-                          <button
-                            key={item.id}
-                            type="button"
-                            className={`${mmc.peak_customerDropdownItem} ${
-                              item.id === selectedCustomerId ? mmc.peak_customerDropdownItemActive : ''
-                            }`}
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => handleCustomerSelect(item)}
-                          >
-                            {item.name}
-                          </button>
-                        ))
-                      ) : (
-                        <div className={mmc.peak_customerDropdownEmpty}>{t('검색 결과가 없습니다.')}</div>
-                      )}
-                    </div>
-                  )}
-                </div>
+              <div className={mmc.peak_customerCombo} ref={customerComboRef}>
+                <input
+                  type="text"
+                  className={mmc.peak_customerSearchInput}
+                  placeholder={t('고객사 검색 후 선택')}
+                  value={customerKeyword}
+                  onFocus={(e) => {
+                    setIsCustomerDropdownOpen(true)
+                    setIsCustomerSearching(false)
+                    e.currentTarget.select()
+                  }}
+                  onChange={(e) => {
+                    setCustomerKeyword(e.target.value)
+                    setIsCustomerDropdownOpen(true)
+                    setIsCustomerSearching(true)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') setIsCustomerDropdownOpen(false)
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      const first = filteredCustomerOptions[0]
+                      if (first) handleCustomerSelect(first)
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className={mmc.peak_customerComboArrow}
+                  onClick={() => setIsCustomerDropdownOpen((p) => !p)}
+                  aria-label={t('고객사 목록 열기')}
+                >
+                  ▾
+                </button>
+                {isCustomerDropdownOpen && (
+                  <div className={mmc.peak_customerDropdown}>
+                    {filteredCustomerOptions.length ? (
+                      filteredCustomerOptions.map((it) => (
+                        <button
+                          key={it.id}
+                          type="button"
+                          className={`${mmc.peak_customerDropdownItem} ${it.id === selectedCustomerId ? mmc.peak_customerDropdownItemActive : ''}`}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => handleCustomerSelect(it)}
+                        >
+                          {it.name}
+                        </button>
+                      ))
+                    ) : (
+                      <div className={mmc.peak_customerDropdownEmpty}>{t('검색 결과가 없습니다.')}</div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
         </div>
-
-        {isAdminUser && customerListError ? (
-          <p className={mmc.peak_customerSelectError}>{t(customerListError)}</p>
-        ) : null}
       </header>
 
-      {!shouldHidePeakContent && (
+      {!shouldHide && (
         <>
-          <section className={`${mmc.peak_selectCard} ${mmc.peak_stageFadeUp}`}>
-            <div className={mmc.peak_selectTitleWrap}>
-              <h2>{t('장비 선택/입력')}</h2>
-              <p>{t('MILP 피크 분배 시뮬레이션을 위해 미가동 기준 및 조회시간을 입력해주세요.')}</p>
+          {/* STEP 1 — 목표 피크선 설정 */}
+          <section className={`${mmc.peak_targetCard} ${mmc.peak_stageFadeUp}`}>
+            <div className={mmc.peak_cardHead}>
+              <h2>{t('목표 피크선 설정')}</h2>
+              <p>{t('회사 공통 목표선을 정하면 전 장비에 적용됩니다. 장비별 목표선은 아래 결과에서 개별 지정할 수 있습니다.')}</p>
             </div>
-
-            <div className={mmc.peak_selectControls}>
-              <div className={`${mmc.peak_field} ${mmc.peak_field_idle}`}>
-                <div className={mmc.peak_fieldTop}>
-                  <span className={mmc.peak_fieldLabel}>{t('미가동 기준')}</span>
-                  <span className={mmc.peak_fieldHint}>{t('OP_STATUS 평균 이하')}</span>
+            <div className={mmc.peak_targetControls}>
+              <div className={mmc.peak_targetField}>
+                <span className={mmc.peak_fieldLabel}>{t('회사 공통 목표선')}</span>
+                <div className={mmc.peak_targetInputRow}>
+                  <input
+                    className={mmc.peak_numberInput}
+                    type="number"
+                    min={0}
+                    step={1}
+                    placeholder="kW"
+                    value={companyTargetInput}
+                    onChange={(e) => setCompanyTargetInput(e.target.value)}
+                  />
+                  <span className={mmc.peak_unit}>kW</span>
+                  <button
+                    type="button"
+                    className={mmc.peak_saveBtn}
+                    disabled={isSavingTarget}
+                    onClick={() => saveTarget(null, companyTargetInput)}
+                  >
+                    {isSavingTarget ? t('저장 중..') : t('목표선 저장')}
+                  </button>
                 </div>
-                <input
-                  className={`${mmc.peak_numberInput} ${mmc.peak_numberInputSpin}`}
-                  type="number"
-                  value={idleThreshold}
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  onChange={(e) => {
-                    const raw = e.target.value // 입력 문자열
-                    if (raw === '') {
-                      setIdleThreshold(0)
-                      return
-                    }
-
-                    const next = Number(raw) // 숫자 변환값
-                    if (Number.isNaN(next)) return
-                    setIdleThreshold(normalizeIdleThreshold(next))
-                  }}
-                  onBlur={() => {
-                    setIdleThreshold((prev) => normalizeIdleThreshold(prev))
-                  }}
-                />
+                {savedCompanyTarget != null && (
+                  <span className={mmc.peak_fieldHint}>{t('현재 적용')}: {fmtKw(savedCompanyTarget)}</span>
+                )}
               </div>
 
-              <div className={`${mmc.peak_field} ${mmc.peak_field_time}`}>
-                <div className={mmc.peak_fieldTop}>
-                  <span className={mmc.peak_fieldLabel}>{t('조회 시간')}</span>
-                  <span className={mmc.peak_fieldHint}>{t('시뮬레이션 조회 시간 입력')}</span>
-                </div>
-                <input
-                  className={`${mmc.peak_numberInput} ${mmc.peak_numberInputSpin}`}
-                  type="number"
-                  value={queryHour}
-                  min={1}
-                  step={1}
-                  onChange={(e) => {
-                    const next = Number(e.target.value) // 입력 숫자
-                    if (Number.isNaN(next)) {
-                      setQueryHour(1)
-                      return
-                    }
-                    setQueryHour(Math.max(1, next))
-                  }}
-                />
-              </div>
-
-              <button
-                type="button"
-                className={mmc.peak_runBtn}
-                onClick={handleRunMilp}
-                disabled={isRunning || (isAdminUser && !selectedCustomerId)}
-              >
-                {isRunning ? t('MILP 실행 중..') : t('MILP 실행')}
+              <button type="button" className={mmc.peak_runBtn} onClick={runDiagnosis} disabled={isRunning}>
+                {isRunning ? t('진단 중..') : t('피크 진단 실행')}
               </button>
             </div>
+            {savedCompanyTarget == null && Object.keys(deviceTargets).length === 0 && (
+              <p className={mmc.peak_emptyHint}>
+                {t('목표선이 아직 없습니다. 회사 공통 목표선을 먼저 설정한 뒤 진단을 실행하면 조치 권고가 의미있게 나옵니다.')}
+              </p>
+            )}
           </section>
 
-          {showEquipmentResult && milpResult && (
+          {/* STEP 3 — 결과 대시보드 */}
+          {result && (
             <section className={mmc.peak_resultWrap}>
-              <div className={mmc.peak_topResultGrid}>
-                <article className={`${mmc.peak_equipmentCard} ${mmc.peak_stageFadeUp}`}>
+              {/* 3-A KPI */}
+              <div className={mmc.peak_kpiRow}>
+                <article className={`${mmc.peak_kpiCard} ${mmc.peak_stageFadeUp}`}>
+                  <span className={mmc.peak_kpiLabel}>{t('분석 장비')}</span>
+                  <strong className={mmc.peak_kpiValue}>{result.device_count}<small>{t('대')}</small></strong>
+                </article>
+                <article className={`${mmc.peak_kpiCard} ${mmc.peak_kpiCardDanger} ${mmc.peak_stageFadeUp}`}>
+                  <span className={mmc.peak_kpiLabel}>{t('목표 초과 장비')}</span>
+                  <strong className={mmc.peak_kpiValue}>{exceedCount}<small>{t('대')}</small></strong>
+                </article>
+                <article className={`${mmc.peak_kpiCard} ${mmc.peak_stageFadeUp}`}>
+                  <span className={mmc.peak_kpiLabel}>{t('총 초과 전력')}</span>
+                  <strong className={mmc.peak_kpiValue}>{toNumber(totalOver).toFixed(1)}<small>kW</small></strong>
+                </article>
+                <article className={`${mmc.peak_kpiCard} ${mmc.peak_kpiCardBlue} ${mmc.peak_stageFadeUp}`}>
+                  <span className={mmc.peak_kpiLabel}>{t('목표 준수율')}</span>
+                  <strong className={mmc.peak_kpiValue}>{complianceRate}<small>%</small></strong>
+                </article>
+              </div>
+
+              <div className={mmc.peak_mainGrid}>
+                {/* 3-B 히어로 시계열 */}
+                <article className={`${mmc.peak_chartCard} ${mmc.peak_stageFadeUp}`}>
                   <div className={mmc.peak_cardHead}>
-                    <h3>{t('장비 수')}</h3>
-                    <p>{t('MILP 피크에 대한 장비 분석 결과 입니다.')}</p>
+                    <h3>{t('전력 예측 vs 목표선')}</h3>
+                    <p>{t('선택 장비의 최근 실측과 15/30분 예측을 목표 피크선과 비교합니다.')}</p>
                   </div>
-
-                  <div className={mmc.peak_equipmentBody}>
-                    <CommonDonutEquipment
-                      legend={equipmentLegend}
-                      totalLabel={`${t('전체 장비 수')} (${totalEquipmentCount}${t('대')})`}
+                  <div className={mmc.peak_deviceTabs}>
+                    {sortedDevices.slice(0, 8).map((d, i) => (
+                      <button
+                        key={d.device_id}
+                        type="button"
+                        className={`${mmc.peak_deviceTab} ${d.device_id === selectedDeviceId ? mmc.peak_deviceTabActive : ''}`}
+                        onClick={() => setSelectedDeviceId(d.device_id)}
+                      >
+                        <span className={`${mmc.peak_dot} ${STATUS_META[d.status]?.cls ?? ''}`} />
+                        {deviceName(d.device_id, i)}
+                      </button>
+                    ))}
+                  </div>
+                  {selectedDevice ? (
+                    <CommonDetailMonitoringTimeSeriesChart
+                      unitLabel="kW"
+                      actualData={historyMap[selectedDevice.device_id] ?? []}
+                      forecastData={heroForecast}
+                      peakValue={selectedDevice.threshold}
+                      showPeakLine={selectedDevice.threshold > 0}
                     />
-                  </div>
+                  ) : (
+                    <div className={mmc.peak_emptyHint}>{t('장비를 선택하세요.')}</div>
+                  )}
                 </article>
 
-                <article
-                  className={`${mmc.peak_peakReduceCard} ${mmc.peak_peakReduceCardBlue} ${mmc.peak_stageFadeUp}`}
-                >
-                  <div className={mmc.peak_peakReduceIconWrap} aria-hidden="true">
-                    <div className={`${imag.elctric_circle_icon} ${mmc.peak_electricIcon}`} />
+                {/* 3-D 상태 도넛 */}
+                <article className={`${mmc.peak_donutCard} ${mmc.peak_stageFadeUp}`}>
+                  <div className={mmc.peak_cardHead}>
+                    <h3>{t('장비 상태')}</h3>
+                    <p>{t('목표선 대비 장비 상태 분포입니다.')}</p>
                   </div>
-
-                  <h4 className={mmc.peak_peakReduceTitle}>{t('15분 피크 절감')}</h4>
-
-                  <div className={mmc.peak_peakReduceValueWrap}>
-                    <strong className={mmc.peak_peakReduceValue}>{formatKw(peakCut15Kw)}</strong>
-                    <span className={mmc.peak_peakReduceRate}>{formatRate(peakCut15Rate)}</span>
-                  </div>
-                </article>
-
-                <article
-                  className={`${mmc.peak_peakReduceCard} ${mmc.peak_peakReduceCardWhite} ${mmc.peak_stageFadeUp}`}
-                >
-                  <div className={mmc.peak_peakReduceIconWrap} aria-hidden="true">
-                    <div className={`${imag.elctric_circle_icon} ${mmc.peak_electricIcon}`} />
-                  </div>
-
-                  <h4 className={mmc.peak_peakReduceTitle}>{t('30분 피크 절감')}</h4>
-
-                  <div className={mmc.peak_peakReduceValueWrap}>
-                    <strong className={mmc.peak_peakReduceValue}>{formatKw(peakCut30Kw)}</strong>
-                    <span className={mmc.peak_peakReduceRate}>{formatRate(peakCut30Rate)}</span>
+                  <CommonDonutEquipment legend={donutLegend} totalLabel={`${t('전체')} (${devices.length}${t('대')})`} />
+                  <div className={mmc.peak_complianceWrap}>
+                    <span className={mmc.peak_complianceLabel}>{t('목표 준수율')}</span>
+                    <strong className={mmc.peak_complianceValue}>{complianceRate}%</strong>
                   </div>
                 </article>
               </div>
 
-              <article className={`${mmc.peak_recommendCard} ${mmc.peak_stageFadeUp}`}>
+              {/* 3-C 조치 리스트 */}
+              <article className={`${mmc.peak_actionCard} ${mmc.peak_stageFadeUp}`}>
                 <div className={mmc.peak_cardHead}>
-                  <h3>{t('장비 분배 추천')}</h3>
-                  <p>{t('피크 절감을 위한 장비 분배 추천 결과입니다.')}</p>
+                  <h3>{t('조치 권고')}</h3>
+                  <p>{t('목표선을 넘는 장비를 우선순위대로 보여줍니다. 장비별 목표선도 여기서 조정할 수 있습니다.')}</p>
                 </div>
-
-                <div className={mmc.peak_recommendRows}>
-                  {recommendations.length ? (
-                    recommendations.map((item) => (
-                      <div key={item.deviceId} className={mmc.peak_recommendRow}>
-                        <div className={mmc.peak_recommendInfoWrap}>
-                          <div className={mmc.peak_recommendInfoRow}>
-                            <div className={mmc.peak_recommendBadge}>{t('장비 정보')}</div>
-                            <strong className={mmc.peak_recommendEquipment}>{item.equipmentName}</strong>
-                          </div>
-
-                          <div className={mmc.peak_recommendInfoRow}>
-                            <div className={mmc.peak_recommendBadgeLarge}>{t('추천 분배')}</div>
-                            <div className={mmc.peak_recommendTextGroup}>
-                              {item.distributionLines.map((line, idx) => (
-                                <p key={`${item.deviceId}-${idx}`} className={mmc.peak_recommendText}>
-                                  {line}
-                                </p>
+                <div className={mmc.peak_actionRows}>
+                  {sortedDevices.length ? (
+                    sortedDevices.map((d, i) => {
+                      const over = Math.max(d.required_shift_15, d.required_shift_30)
+                      const loadRate = d.threshold > 0 ? Math.round((Math.max(d.baseline_15, d.baseline_30) / d.threshold) * 100) : 0
+                      const lines = d.distribution_text.split('\n').map((l) => l.trim()).filter(Boolean)
+                      return (
+                        <div
+                          key={d.device_id}
+                          className={`${mmc.peak_actionRow} ${d.device_id === selectedDeviceId ? mmc.peak_actionRowActive : ''}`}
+                          onClick={() => setSelectedDeviceId(d.device_id)}
+                        >
+                          <div className={mmc.peak_actionMain}>
+                            <div className={mmc.peak_actionHeadLine}>
+                              <span className={`${mmc.peak_badge} ${STATUS_META[d.status]?.cls ?? ''}`}>{STATUS_META[d.status]?.label}</span>
+                              <strong className={mmc.peak_actionName}>{deviceName(d.device_id, i)}</strong>
+                              <span className={mmc.peak_driveChip}>{d.drive_mode}</span>
+                              <span className={mmc.peak_actionChip}>{ACTION_META[d.action_type]}</span>
+                            </div>
+                            <div className={mmc.peak_actionMeta}>
+                              <span>{t('예측')} {fmtKw(Math.max(d.baseline_15, d.baseline_30))}</span>
+                              <span>{t('목표')} {fmtKw(d.threshold)}</span>
+                              {over > 0 && <span className={mmc.peak_overTag}>▲ {t('초과')} {fmtKw(over)}</span>}
+                            </div>
+                            <CommonHorizontalBar items={[{ label: t('목표 대비 부하'), rate: loadRate }]} />
+                            <div className={mmc.peak_actionText}>
+                              {(lines.length ? lines : [t('현재 목표선 이내입니다.')]).map((l, idx) => (
+                                <p key={idx}>{l}</p>
                               ))}
                             </div>
                           </div>
+                          <div className={mmc.peak_actionTargetBox} onClick={(e) => e.stopPropagation()}>
+                            <span className={mmc.peak_fieldHint}>{t('장비 목표선')}</span>
+                            <div className={mmc.peak_targetInputRow}>
+                              <input
+                                className={mmc.peak_numberInputSm}
+                                type="number"
+                                min={0}
+                                step={1}
+                                placeholder="kW"
+                                value={deviceTargetInputs[d.device_id] ?? ''}
+                                onChange={(e) => setDeviceTargetInputs((p) => ({ ...p, [d.device_id]: e.target.value }))}
+                              />
+                              <button
+                                type="button"
+                                className={mmc.peak_saveBtnSm}
+                                disabled={isSavingTarget}
+                                onClick={() => saveTarget(d.device_id, deviceTargetInputs[d.device_id] ?? '')}
+                              >
+                                {t('적용')}
+                              </button>
+                            </div>
+                            {deviceTargets[d.device_id] != null && (
+                              <span className={mmc.peak_fieldHint}>{t('설정됨')}: {fmtKw(deviceTargets[d.device_id])}</span>
+                            )}
+                          </div>
                         </div>
-
-                        <div className={mmc.peak_recommendRightGroup}>
-                          <div className={mmc.peak_recommendPredictBox}>{t('장비 가동 예측')}</div>
-
-                          <CommonPeakPredictBars
-                            bars={[
-                              { label: t('15분 기준값'), value: item.base15Kw },
-                              { label: t('30분 기준값'), value: item.base30Kw },
-                            ]}
-                            unit="kW"
-                            maxValue={maxPredictValue}
-                            gapPx={80}
-                            sidePaddingPx={40}
-                            valueOffsetPx={8}
-                          />
-                        </div>
-                      </div>
-                    ))
+                      )
+                    })
                   ) : (
-                    <div className={mmc.peak_recommendRow}>
-                      <div className={mmc.peak_recommendTextGroup}>
-                        <p className={mmc.peak_recommendText}>{t('추천할 장비 데이터가 없습니다.')}</p>
-                      </div>
-                    </div>
+                    <div className={mmc.peak_emptyHint}>{t('표시할 장비가 없습니다.')}</div>
                   )}
                 </div>
+                {exceedCount === 0 && devices.length > 0 && (
+                  <div className={mmc.peak_allClear}>✅ {t('모든 장비가 목표선 이내입니다.')}</div>
+                )}
               </article>
             </section>
           )}
         </>
       )}
 
-      <LoadingModal
-        open={isRunning}
-        message={t('MILP 시뮬레이션을 실행중입니다.')}
-        subMessage={t('잠시만 기다려주세요.')}
-      />
-
-      <WarningModal
-        open={warnOpen}
-        title={warnTitle}
-        detail={warnDetail}
-        onConfirm={closeWarn}
-        onCancel={closeWarn}
-      />
+      <LoadingModal open={isRunning} message={t('피크 진단을 실행중입니다.')} subMessage={t('잠시만 기다려주세요.')} />
+      <WarningModal open={warnOpen} title={warnTitle} detail={warnDetail} onConfirm={() => setWarnOpen(false)} onCancel={() => setWarnOpen(false)} />
     </div>
   )
 }

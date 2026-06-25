@@ -23,6 +23,11 @@ export const PYTHON_CONFIG = {
       `${PYTHON_API_PREFIX}/api/optimize/peak-dispatch`,
     ),
 
+    // 피크 분배 목표선(target peak) 설정/조회/삭제
+    PEAK_TARGET: normalizeEndpointPath(
+      `${PYTHON_API_PREFIX}/api/optimize/peak-target`,
+    ),
+
     // 시뮬레이션 템플릿 조회
     SIMULATION_TEMPLATE: (deviceId: string) =>
       normalizeEndpointPath(`${PYTHON_API_PREFIX}/api/simulate/template/${deviceId}`),

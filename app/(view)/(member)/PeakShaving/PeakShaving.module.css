@@ -897,4 +897,388 @@
   }
 }
 
+/* ===================== 재설계: 피크 관리 콘솔 ===================== */
+.peak_cardHead {
+  margin-bottom: 16px;
+}
+.peak_cardHead h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0d274b;
+  letter-spacing: -0.6px;
+}
+.peak_cardHead h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0d274b;
+}
+.peak_cardHead p {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #5c6f87;
+}
+
+/* STEP1 목표선 */
+.peak_targetCard {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 22px;
+  padding: 22px 24px;
+  box-shadow: 0 4px 14px rgba(20, 45, 73, 0.08);
+}
+.peak_targetControls {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.peak_targetField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.peak_fieldLabel {
+  font-size: 14px;
+  font-weight: 800;
+  color: #2b2b2b;
+}
+.peak_fieldHint {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5c6f87;
+}
+.peak_targetInputRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.peak_numberInput {
+  height: 40px;
+  width: 130px;
+  border: 1px solid #c9d8e6;
+  border-radius: 10px;
+  padding: 0 12px;
+  font-size: 15px;
+  background: #eff7ff;
+}
+.peak_numberInputSm {
+  height: 34px;
+  width: 92px;
+  border: 1px solid #c9d8e6;
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 14px;
+  background: #eff7ff;
+}
+.peak_unit {
+  font-size: 13px;
+  color: #5c6f87;
+  font-weight: 700;
+}
+.peak_saveBtn,
+.peak_saveBtnSm {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 0;
+  color: #fff;
+  font-weight: 700;
+  background: linear-gradient(180deg, #2a93ca 0%, #1a78b0 100%);
+  cursor: pointer;
+}
+.peak_saveBtnSm {
+  height: 34px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+.peak_saveBtn:disabled,
+.peak_saveBtnSm:disabled,
+.peak_runBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.peak_runBtn {
+  height: 44px;
+  padding: 0 26px;
+  border-radius: 999px;
+  border: 0;
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  background: linear-gradient(180deg, #243ea9 0%, #182c7e 100%);
+  cursor: pointer;
+  margin-left: auto;
+}
+.peak_emptyHint {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #f1f6ff;
+  color: #3a4a66;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* STEP3 결과 */
+.peak_resultWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.peak_kpiRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.peak_kpiCard {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 18px;
+  padding: 20px 22px;
+  box-shadow: 0 4px 14px rgba(20, 45, 73, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.peak_kpiCardDanger {
+  background: linear-gradient(180deg, #fff5f5 0%, #ffeaea 100%);
+}
+.peak_kpiCardBlue {
+  background: linear-gradient(180deg, #eef4ff 0%, #e2ecff 100%);
+}
+.peak_kpiLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5c6f87;
+}
+.peak_kpiValue {
+  font-size: 40px;
+  font-weight: 700;
+  color: #224bc0;
+  letter-spacing: -1.5px;
+  line-height: 1;
+}
+.peak_kpiValue small {
+  font-size: 16px;
+  font-weight: 600;
+  color: #5c6f87;
+  margin-left: 4px;
+  letter-spacing: 0;
+}
+.peak_kpiCardDanger .peak_kpiValue {
+  color: #d14343;
+}
+
+.peak_mainGrid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 14px;
+}
+.peak_chartCard,
+.peak_donutCard,
+.peak_actionCard {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 22px;
+  padding: 22px 24px;
+  box-shadow: 0 4px 14px rgba(20, 45, 73, 0.08);
+}
+.peak_deviceTabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.peak_deviceTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid #d2e6fb;
+  background: #fff;
+  color: #3a4a66;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.peak_deviceTabActive {
+  border-color: #243ea9;
+  background: #eef3ff;
+  color: #224bc0;
+  font-weight: 800;
+}
+.peak_dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  padding: 0;
+  flex: none;
+}
+
+.peak_donutCard {
+  display: flex;
+  flex-direction: column;
+}
+.peak_complianceWrap {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e7eefb;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.peak_complianceLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5c6f87;
+}
+.peak_complianceValue {
+  font-size: 26px;
+  font-weight: 700;
+  color: #2bb673;
+}
+
+/* 조치 리스트 */
+.peak_actionRows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.peak_actionRow {
+  display: flex;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid #e7eefb;
+  border-radius: 16px;
+  background: #fbfdff;
+  cursor: pointer;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+.peak_actionRow:hover {
+  border-color: #c5ddf4;
+}
+.peak_actionRowActive {
+  border-color: #243ea9;
+  box-shadow: 0 0 0 2px rgba(36, 62, 169, 0.12);
+}
+.peak_actionMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.peak_actionHeadLine {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.peak_badge {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+}
+.peak_badgeExceed {
+  background: #d14343;
+}
+.peak_badgeWarning {
+  background: #e9a24f;
+}
+.peak_badgeNormal {
+  background: #2bb673;
+}
+.peak_badgeUnknown {
+  background: #9aa7b8;
+}
+.peak_actionName {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0d274b;
+}
+.peak_driveChip,
+.peak_actionChip {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.peak_driveChip {
+  background: #eef2f8;
+  color: #5c6f87;
+}
+.peak_actionChip {
+  background: #edf5ff;
+  color: #224bc0;
+}
+.peak_actionMeta {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: #3a4a66;
+  flex-wrap: wrap;
+}
+.peak_overTag {
+  color: #d14343;
+  font-weight: 800;
+}
+.peak_actionText {
+  font-size: 13px;
+  color: #4d4d4d;
+  line-height: 1.55;
+}
+.peak_actionText p {
+  margin: 2px 0;
+}
+.peak_actionTargetBox {
+  width: 180px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 16px;
+  border-left: 1px solid #e7eefb;
+}
+.peak_allClear {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #effaf3;
+  color: #1c7a48;
+  font-weight: 700;
+  text-align: center;
+}
+
+@media (max-width: 1280px) {
+  .peak_kpiRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .peak_mainGrid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 760px) {
+  .peak_kpiRow {
+    grid-template-columns: 1fr;
+  }
+  .peak_actionRow {
+    flex-direction: column;
+  }
+  .peak_actionTargetBox {
+    width: 100%;
+    border-left: 0;
+    padding-left: 0;
+    border-top: 1px solid #e7eefb;
+    padding-top: 12px;
+  }
+}
+
 
