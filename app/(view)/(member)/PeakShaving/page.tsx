@@ -28,6 +28,13 @@ type EffDeviceType = {
   loss_pct: number
   status: 'good' | 'watch' | 'poor' | 'idle'
   rank: number
+  load_share_pct: number
+  health_score: number
+}
+type DistributionType = {
+  run_priority: string[]
+  reduce_priority: string[]
+  skew_alert: string | null
 }
 type ForecastType = {
   now_kw: number
@@ -42,6 +49,7 @@ type EffResult = {
   facility_peak_kw: number
   per_unit_kw: number
   devices: EffDeviceType[]
+  distribution: DistributionType | null
   forecast: ForecastType | null
   recommendations: string[]
 }
@@ -111,6 +119,9 @@ export default function PeakShavingPage() {
     poor: { label: t('효율 저하'), cls: mmc.peak_badgeExceedRed },
     idle: { label: t('정지'), cls: mmc.peak_badgeUnknown },
   }
+
+  // "공기압축기 1호기 KYV150" → "1호기" (분배 막대/우선순위 표기 축약)
+  const shortName = (n: string) => String(n || '').replace('공기압축기 ', '').replace(/\s*KYV\d+.*$/i, '').trim() || n
 
   const loadEfficiency = async (customerId: string) => {
     if (!customerId) return
@@ -264,6 +275,33 @@ export default function PeakShavingPage() {
             </article>
           </div>
 
+          {/* 부하 분배 현황 + 효율 기반 분배 권고 (대시보드 핵심) */}
+          {result.distribution && (
+            <article className={`${mmc.peak_actionCard} ${mmc.peak_stageFadeUp}`}>
+              <div className={mmc.peak_cardHead}>
+                <h3>{t('부하 분배 현황 & 권고')}</h3>
+                <p>{t('설비 총부하를 각 컴프레서가 나눠 부담하는 비율과, 효율 기반 가동·감산 순서입니다.')}</p>
+              </div>
+              <div className={mmc.peak_shareBar}>
+                {devices.filter((d) => d.running).map((d) => (
+                  <div
+                    key={d.device_id}
+                    className={`${mmc.peak_shareSeg} ${mmc[`peak_share_${d.status}`] ?? ''}`}
+                    style={{ width: `${d.load_share_pct}%` }}
+                    title={`${d.device_name} ${d.load_share_pct}%`}
+                  >
+                    <span>{shortName(d.device_name)} {d.load_share_pct}%</span>
+                  </div>
+                ))}
+              </div>
+              <div className={mmc.peak_distRecos}>
+                <div><b>{t('가동 우선순위')}</b> ({t('효율 좋은 순')}): {result.distribution.run_priority.map(shortName).join(' → ')}</div>
+                <div><b>{t('감산·정지 우선순위')}</b> ({t('비효율 순')}): {result.distribution.reduce_priority.map(shortName).join(' → ')}</div>
+                {result.distribution.skew_alert && <div className={mmc.peak_recoLine}>⚠ {result.distribution.skew_alert}</div>}
+              </div>
+            </article>
+          )}
+
           {/* 권고 */}
           <article className={`${mmc.peak_actionCard} ${mmc.peak_stageFadeUp}`}>
             <div className={mmc.peak_cardHead}>
@@ -293,8 +331,9 @@ export default function PeakShavingPage() {
                         <span className={mmc.peak_driveChip}>{d.drive_mode}</span>
                       </div>
                       <div className={mmc.peak_actionMeta}>
+                        <span>{t('건강')} <b>{d.health_score}{t('점')}</b></span>
                         <span><b>{d.kw_per_bar != null ? d.kw_per_bar.toFixed(2) : '-'}</b> kW/bar</span>
-                        <span>{t('평균')} {d.avg_kw}kW / {d.avg_bar}bar</span>
+                        <span>{t('부담')} {d.load_share_pct}%</span>
                         {d.loss_pct > 0 && <span className={mmc.peak_overTagRed}>{t('효율 손실')} +{d.loss_pct}%</span>}
                         {d.degrade_pct >= 1 && <span className={mmc.peak_overTagRed}>{t('열화')} {d.degrade_pct}%</span>}
                       </div>
