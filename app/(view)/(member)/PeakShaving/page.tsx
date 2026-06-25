@@ -28,12 +28,23 @@ type EffDeviceType = {
   loss_pct: number
   status: 'good' | 'watch' | 'poor' | 'idle'
   rank: number
+  rank_tied: boolean
   load_share_pct: number
+}
+type FeasibilityType = {
+  n_running: number
+  facility_avg_kw: number
+  facility_peak_kw: number
+  shed_capacity_kw: number
+  can_shed_one: boolean
+  headroom_kw: number
+  verdict: string
 }
 type DistributionType = {
   run_priority: string[]
   reduce_priority: string[]
   skew_alert: string | null
+  feasibility: FeasibilityType | null
 }
 type ForecastType = {
   now_kw: number
@@ -278,9 +289,19 @@ export default function PeakShavingPage() {
           {result.distribution && (
             <article className={`${mmc.peak_actionCard} ${mmc.peak_stageFadeUp}`}>
               <div className={mmc.peak_cardHead}>
-                <h3>{t('부하 분배 현황 & 권고')}</h3>
-                <p>{t('설비 총부하를 각 컴프레서가 나눠 부담하는 비율과, 효율 기반 가동·감산 순서입니다.')}</p>
+                <h3>{t('부하 분배 진단')}</h3>
+                <p>{t('한 대를 끄거나 부하를 옮길 여유가 있는지 판정하고, 효율 기반 가동·감산 순서를 안내합니다.')}</p>
               </div>
+              {result.distribution.feasibility && (
+                <div className={`${mmc.peak_feasBanner} ${result.distribution.feasibility.can_shed_one ? mmc.peak_feasOk : mmc.peak_feasNone}`}>
+                  <b>{result.distribution.feasibility.can_shed_one ? t('대수 분배 가능') : t('대수 분배 여유 없음')}</b>
+                  <span>{result.distribution.feasibility.verdict}</span>
+                  <small>
+                    {t('총부하')} {result.distribution.feasibility.facility_avg_kw}kW · {t('피크')} {result.distribution.feasibility.facility_peak_kw}kW ·
+                    {' '}{result.distribution.feasibility.n_running - 1}{t('대 용량')} {result.distribution.feasibility.shed_capacity_kw}kW · {t('여유')} {result.distribution.feasibility.headroom_kw}kW
+                  </small>
+                </div>
+              )}
               <div className={mmc.peak_shareBar}>
                 {devices.filter((d) => d.running).map((d) => (
                   <div
@@ -322,7 +343,7 @@ export default function PeakShavingPage() {
                 const barRate = bestEff && d.kw_per_bar ? Math.min(100, Math.round((bestEff / d.kw_per_bar) * 100)) : 0
                 return (
                   <div key={d.device_id} className={mmc.peak_effRow}>
-                    <div className={mmc.peak_effRank}><small>{t('효율')}</small>{d.rank}{t('위')}</div>
+                    <div className={mmc.peak_effRank}><small>{d.rank_tied ? t('공동') : t('효율')}</small>{d.rank}{t('위')}</div>
                     <div className={mmc.peak_actionMain}>
                       <div className={mmc.peak_actionHeadLine}>
                         <span className={`${mmc.peak_badge} ${STATUS_META[d.status]?.cls ?? ''}`}>{STATUS_META[d.status]?.label}</span>
@@ -333,7 +354,7 @@ export default function PeakShavingPage() {
                         <span><b>{d.kw_per_bar != null ? d.kw_per_bar.toFixed(2) : '-'}</b> kW/bar</span>
                         <span>{t('부담')} {d.load_share_pct}%</span>
                         {d.loss_pct > 0 && <span className={mmc.peak_overTagRed}>{t('효율 손실')} +{d.loss_pct}%</span>}
-                        {d.degrade_pct >= 1 && <span className={mmc.peak_overTagRed}>{t('열화')} {d.degrade_pct}%</span>}
+                        {d.running && <span className={d.degrade_pct >= 1 ? mmc.peak_overTagRed : ''}>{t('열화')} {d.degrade_pct}%</span>}
                       </div>
                       <div className={mmc.peak_effBarTrack}>
                         <div className={mmc.peak_effBarFill} style={{ width: `${barRate}%` }} />

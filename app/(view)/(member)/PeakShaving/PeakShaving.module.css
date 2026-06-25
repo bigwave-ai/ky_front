@@ -1397,6 +1397,43 @@
 .peak_share_idle {
   background: #9aa7b8;
 }
+/* 분배 가능성 판정 배너 */
+.peak_feasBanner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  border-left: 5px solid;
+}
+.peak_feasBanner b {
+  font-size: 15px;
+  font-weight: 800;
+}
+.peak_feasBanner span {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #333;
+}
+.peak_feasBanner small {
+  font-size: 11px;
+  color: #6b7785;
+}
+.peak_feasNone {
+  background: #fdf3f3;
+  border-color: #d14343;
+}
+.peak_feasNone b {
+  color: #c23333;
+}
+.peak_feasOk {
+  background: #eef9f2;
+  border-color: #2bb673;
+}
+.peak_feasOk b {
+  color: #1f9c61;
+}
 .peak_distRecos {
   display: flex;
   flex-direction: column;
