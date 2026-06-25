@@ -29,14 +29,20 @@ type EffDeviceType = {
   status: 'good' | 'watch' | 'poor' | 'idle'
   rank: number
 }
-type ScheduleRow = { hour: number; demand_kw: number; units_on: number; run: string[]; pause: string[] }
+type ForecastType = {
+  now_kw: number
+  pred_15_kw: number | null
+  pred_30_kw: number | null
+  trend: string | null
+  action: string | null
+}
 type EffResult = {
   company_name: string
   facility_avg_kw: number
   facility_peak_kw: number
   per_unit_kw: number
   devices: EffDeviceType[]
-  schedule: ScheduleRow[]
+  forecast: ForecastType | null
   recommendations: string[]
 }
 type AdminCustomerOptionType = { id: string; name: string }
@@ -172,8 +178,6 @@ export default function PeakShavingPage() {
     setIsCustomerDropdownOpen(false)
   }
 
-  const hourLabel = (h: number) => `${String(h).padStart(2, '0')}:00`
-
   return (
     <div className={mmc.peak_root}>
       <header className={`${mmc.peak_pageHead} ${mmc.peak_stageFadeUp}`}>
@@ -281,7 +285,7 @@ export default function PeakShavingPage() {
                 const barRate = bestEff && d.kw_per_bar ? Math.min(100, Math.round((bestEff / d.kw_per_bar) * 100)) : 0
                 return (
                   <div key={d.device_id} className={mmc.peak_effRow}>
-                    <div className={mmc.peak_effRank}>#{d.rank}</div>
+                    <div className={mmc.peak_effRank}><small>{t('효율')}</small>{d.rank}{t('위')}</div>
                     <div className={mmc.peak_actionMain}>
                       <div className={mmc.peak_actionHeadLine}>
                         <span className={`${mmc.peak_badge} ${STATUS_META[d.status]?.cls ?? ''}`}>{STATUS_META[d.status]?.label}</span>
@@ -304,35 +308,33 @@ export default function PeakShavingPage() {
             </div>
           </article>
 
-          {/* 운영 스케줄 */}
-          <article className={`${mmc.peak_actionCard} ${mmc.peak_stageFadeUp}`}>
-            <div className={mmc.peak_cardHead}>
-              <h3>{t('운영 스케줄 (앞으로 6시간)')}</h3>
-              <p>{t('시간대 예측 수요에 맞춰 필요한 대수만 효율 좋은 장비부터 가동. 정지 가능 장비는 비효율 장비 우선.')}</p>
-            </div>
-            <table className={mmc.peak_schedTable}>
-              <thead>
-                <tr>
-                  <th>{t('시각')}</th>
-                  <th>{t('예측 수요')}</th>
-                  <th>{t('가동')}</th>
-                  <th>{t('가동 장비')}</th>
-                  <th>{t('정지 가능')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.schedule.map((s, i) => (
-                  <tr key={i}>
-                    <td>{hourLabel(s.hour)}</td>
-                    <td>{s.demand_kw} kW</td>
-                    <td><b>{s.units_on}{t('대')}</b></td>
-                    <td>{s.run.join(', ')}</td>
-                    <td className={mmc.peak_schedPause}>{s.pause.length ? s.pause.join(', ') : '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </article>
+          {/* 30분 단기 수요 전망 (실제 예측 모델) */}
+          {result.forecast && (
+            <article className={`${mmc.peak_actionCard} ${mmc.peak_stageFadeUp}`}>
+              <div className={mmc.peak_cardHead}>
+                <h3>{t('단기 수요 전망 (30분 예측)')}</h3>
+                <p>{t('AI 예측 모델 기준 설비 총전력의 15·30분 후 전망입니다. (모델은 30분까지 예측)')}</p>
+              </div>
+              <div className={mmc.peak_forecastRow}>
+                <div className={mmc.peak_forecastCell}>
+                  <span>{t('현재')}</span>
+                  <strong>{result.forecast.now_kw} kW</strong>
+                </div>
+                <div className={mmc.peak_forecastArrow}>→</div>
+                <div className={mmc.peak_forecastCell}>
+                  <span>+15{t('분')}</span>
+                  <strong>{result.forecast.pred_15_kw ?? '-'} kW</strong>
+                </div>
+                <div className={mmc.peak_forecastArrow}>→</div>
+                <div className={mmc.peak_forecastCell}>
+                  <span>+30{t('분')}</span>
+                  <strong>{result.forecast.pred_30_kw ?? '-'} kW</strong>
+                  {result.forecast.trend && <em className={mmc.peak_trendTag}>{result.forecast.trend}</em>}
+                </div>
+              </div>
+              {result.forecast.action && <div className={mmc.peak_recoLine}>• {result.forecast.action}</div>}
+            </article>
+          )}
         </section>
       )}
 
