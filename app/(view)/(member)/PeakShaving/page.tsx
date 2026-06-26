@@ -75,6 +75,8 @@ type ForecastType = {
   estimate_label?: string
   threshold_kw?: number
   threshold_source?: 'target' | 'p95' | 'capacity_proximity'
+  threshold_per_device_kw?: number | null
+  threshold_device_count?: number | null
   peak_predicted?: boolean
   overshoot_kw?: number
   shift_plan?: ShiftPlanType | null
@@ -472,7 +474,7 @@ export default function PeakShavingPage() {
                   <div className={mmc.peak_peakHead}>
                     ⚠ {t('피크 예측')} — {result.forecast.pred_30_kw}kW
                     {result.forecast.threshold_source === 'target'
-                      ? ` (${t('목표선')} ${result.forecast.threshold_kw}kW ${t('초과')} +${result.forecast.overshoot_kw}kW)`
+                      ? ` (${t('목표선')} ${result.forecast.threshold_kw}kW${result.forecast.threshold_per_device_kw ? ` = ${t('장비당')} ${result.forecast.threshold_per_device_kw}kW × ${result.forecast.threshold_device_count}${t('대')}` : ''} ${t('초과')} +${result.forecast.overshoot_kw}kW)`
                       : ` (${result.forecast.threshold_source === 'p95' ? t('최근 상위(p95)') : t('관측 피크')} ${result.forecast.threshold_kw}kW ${t('근접')})`}
                     <small> · {result.forecast.estimate_label}</small>
                   </div>
